@@ -81,17 +81,22 @@ export function LoginScreen() {
         </p>
       </motion.div>
 
-      <p className="text-muted-foreground/40 text-xs mt-8">
-        © {new Date().getFullYear()}. Built with ❤️ using{" "}
-        <a
-          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-muted-foreground transition-colors"
-        >
-          caffeine.ai
-        </a>
-      </p>
+      <div className="flex flex-col items-center gap-1 mt-8">
+        <p className="text-muted-foreground/40 text-xs">
+          © {new Date().getFullYear()}. Built with ❤️ using{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-muted-foreground transition-colors"
+          >
+            caffeine.ai
+          </a>
+        </p>
+        <p className="text-muted-foreground/30 text-xs">
+          Created and maintained by Tanmoy Saha
+        </p>
+      </div>
     </div>
   );
 }

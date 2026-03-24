@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { Clock, Gamepad2, Gift, LogOut } from "lucide-react";
+import { Clock, Gamepad2, Gift, LogOut, Star } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { EarnScreen } from "./components/EarnScreen";
@@ -10,9 +10,10 @@ import { RedeemScreen } from "./components/RedeemScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useUserProfile } from "./hooks/useQueries";
 import { AdminPage } from "./pages/AdminPage";
+import { CreditsPage } from "./pages/CreditsPage";
 import { TermsPage } from "./pages/TermsPage";
 
-type Tab = "earn" | "redeem" | "orders";
+type Tab = "earn" | "redeem" | "orders" | "credits";
 type Page = "app" | "admin" | "terms";
 
 function getInitialPage(): Page {
@@ -52,6 +53,7 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
     { id: "earn", label: "Earn", icon: <Gamepad2 className="w-4 h-4" /> },
     { id: "redeem", label: "Redeem", icon: <Gift className="w-4 h-4" /> },
     { id: "orders", label: "Orders", icon: <Clock className="w-4 h-4" /> },
+    { id: "credits", label: "Credits", icon: <Star className="w-4 h-4" /> },
   ];
 
   return (
@@ -107,7 +109,7 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
               key={tab.id}
               data-ocid={`nav.${tab.id}.tab`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all duration-200 border-b-2 ${
+              className={`flex-1 flex items-center justify-center gap-1 py-3 text-xs font-semibold transition-all duration-200 border-b-2 ${
                 activeTab === tab.id
                   ? "border-gold text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground/70"
@@ -164,6 +166,17 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 <OrderHistory />
               </motion.div>
             )}
+            {activeTab === "credits" && (
+              <motion.div
+                key="credits"
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CreditsPage />
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </main>
@@ -188,6 +201,9 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
           >
             caffeine.ai
           </a>
+        </p>
+        <p className="text-muted-foreground/30 text-xs">
+          Created and maintained by Tanmoy Saha
         </p>
       </footer>
 

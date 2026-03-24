@@ -370,7 +370,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         )}
       </main>
 
-      <footer className="py-4 text-center">
+      <footer className="py-4 text-center flex flex-col items-center gap-1">
         <p className="text-muted-foreground/40 text-xs">
           © {new Date().getFullYear()}. Built with ❤️ using{" "}
           <a
@@ -381,6 +381,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           >
             caffeine.ai
           </a>
+        </p>
+        <p className="text-muted-foreground/30 text-xs">
+          Created and maintained by Tanmoy Saha
         </p>
       </footer>
     </div>
