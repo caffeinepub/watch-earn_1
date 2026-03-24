@@ -383,8 +383,7 @@ function StatCard({
 }
 
 function NoticesSection() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const actorReady = !!actor && !actorFetching;
+  const { actor } = useActor();
   const { data: notices = [], isLoading } = useAllNotices();
   const postMutation = usePostNotice();
   const editMutation = useEditNotice();
@@ -401,25 +400,33 @@ function NoticesSection() {
       toast.error("Title and message are required");
       return;
     }
-    if (!actorReady) {
-      toast.error(
-        "Backend is connecting... Please wait a moment and try again.",
+    const doPost = (retryActor: typeof actor) => {
+      if (!retryActor) {
+        toast.error(
+          "Backend not connected. Please wait a moment and try again.",
+        );
+        return;
+      }
+      postMutation.mutate(
+        { title: title.trim(), message: message.trim() },
+        {
+          onSuccess: () => {
+            setTitle("");
+            setMessage("");
+            toast.success("Notice published successfully!");
+          },
+          onError: (_err) => {
+            toast.error("Failed to publish notice. Please try again.");
+          },
+        },
       );
-      return;
+    };
+    if (!actor) {
+      // Retry once after a short delay
+      setTimeout(() => doPost(actor), 1000);
+    } else {
+      doPost(actor);
     }
-    postMutation.mutate(
-      { title: title.trim(), message: message.trim() },
-      {
-        onSuccess: () => {
-          setTitle("");
-          setMessage("");
-          toast.success("Notice published successfully!");
-        },
-        onError: (_err) => {
-          toast.error("Failed to publish notice. Please try again.");
-        },
-      },
-    );
   };
 
   const startEdit = (id: bigint, t: string, m: string) => {
@@ -528,15 +535,12 @@ function NoticesSection() {
             data-ocid="admin.post_notice_button"
             onClick={handlePost}
             disabled={
-              !title.trim() ||
-              !message.trim() ||
-              postMutation.isPending ||
-              !actorReady
+              !title.trim() || !message.trim() || postMutation.isPending
             }
             className="w-full h-10 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{
               background:
-                !title.trim() || !message.trim() || !actorReady
+                !title.trim() || !message.trim()
                   ? "oklch(0.28 0.01 255)"
                   : "linear-gradient(135deg, oklch(0.85 0.17 90), oklch(0.78 0.16 82))",
               color: "oklch(0.14 0.005 255)",
@@ -545,11 +549,6 @@ function NoticesSection() {
           >
             {postMutation.isPending ? (
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-            ) : !actorReady ? (
-              <>
-                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin mr-1.5" />
-                Connecting...
-              </>
             ) : (
               <>
                 <Bell className="w-3.5 h-3.5 mr-1.5" /> Publish Notice

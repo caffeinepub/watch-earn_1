@@ -121,20 +121,27 @@ export function demoEarnCoins(amount: number): {
   return { success: true, message: "Coins earned!", newCoins: session.coins };
 }
 
+/**
+ * Submit a demo redeem. Accepts an optional pre-generated code so the same
+ * code can be used for both localStorage and backend logging.
+ */
 export function demoSubmitRedeem(
   amount: number,
   rewardType: string,
+  providedCode?: string,
 ): { success: boolean; message: string; redeemCode?: string } {
   const session = loadSession();
   if (!session) return { success: false, message: "Not logged in" };
 
-  const coinsNeeded = Math.floor(amount / 0.01); // 100 coins = ₹1
+  const coinsNeeded = amount * 100; // 100 coins = ₹1
   if (session.coins < coinsNeeded) {
     return { success: false, message: "Insufficient coins" };
   }
 
   // Demo account: no redeem cooldown
-  const redeemCode = `#GE-${Math.floor(1000 + Math.random() * 9000)}`;
+  const redeemCode =
+    providedCode ?? `#GE-${Math.floor(1000 + Math.random() * 9000)}`;
+
   const order: DemoOrder = {
     id: String(Date.now()),
     redeemCode,
@@ -155,4 +162,21 @@ export function demoSubmitRedeem(
 export function getDemoOrders(): DemoOrder[] {
   const session = loadSession();
   return session?.orders ?? [];
+}
+
+/**
+ * Update the status of a demo order in localStorage.
+ * Called when admin approves/rejects and we want to reflect that locally.
+ */
+export function updateDemoOrderStatus(
+  redeemCode: string,
+  status: "approved" | "rejected",
+): void {
+  const session = loadSession();
+  if (!session) return;
+  const order = session.orders.find((o) => o.redeemCode === redeemCode);
+  if (order) {
+    order.status = status;
+    saveSession(session);
+  }
 }
