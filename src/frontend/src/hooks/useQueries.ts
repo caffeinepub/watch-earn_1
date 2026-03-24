@@ -1,16 +1,63 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Notice, RedeemRequest, UserProfile } from "../backend.d";
+import {
+  demoEarnCoins,
+  demoSubmitRedeem,
+  getDemoOrders,
+  getDemoProfile,
+  isDemoLoggedIn,
+} from "../utils/demoMode";
 import { useActor } from "./useActor";
+
+// ── Demo helpers ────────────────────────────────────────────────────────────
+
+function makeDemoProfile(): UserProfile | null {
+  const s = getDemoProfile();
+  if (!s) return null;
+  return {
+    id: "demo",
+    email: s.email,
+    username: "DemoUser",
+    coins: BigInt(s.coins),
+    // Demo account: no cooldowns ever
+    nextAllowedAdTime: BigInt(0),
+    fastClickDisabledUntil: BigInt(0),
+    dailyAdsWatched: BigInt(0),
+    lastAdDate: "",
+    lastRedeemTime: BigInt(0),
+    fastClickCount: BigInt(0),
+  } as unknown as UserProfile;
+}
+
+function makeDemoOrders(): RedeemRequest[] {
+  return getDemoOrders().map(
+    (o) =>
+      ({
+        id: BigInt(o.id),
+        redeemCode: o.redeemCode,
+        amount: BigInt(o.amount),
+        rewardType: o.rewardType,
+        status: o.status,
+        userEmail: getDemoProfile()?.email ?? "",
+        userName: "DemoUser",
+        createdAt: BigInt(o.createdAt),
+      }) as unknown as RedeemRequest,
+  );
+}
+
+// ── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useUserProfile() {
   const { actor, isFetching } = useActor();
+  const demo = isDemoLoggedIn();
   return useQuery<UserProfile | null>({
     queryKey: ["userProfile"],
     queryFn: async () => {
+      if (demo) return makeDemoProfile();
       if (!actor) return null;
       return actor.getCallerUserProfile();
     },
-    enabled: !!actor && !isFetching,
+    enabled: demo || (!!actor && !isFetching),
     refetchInterval: false,
   });
 }
@@ -18,8 +65,14 @@ export function useUserProfile() {
 export function useEarnCoins() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const demo = isDemoLoggedIn();
   return useMutation({
     mutationFn: async () => {
+      if (demo) {
+        const result = demoEarnCoins(100);
+        if (!result.success) throw new Error(result.message);
+        return result;
+      }
       if (!actor) throw new Error("Not connected");
       return actor.earnCoins();
     },
@@ -32,6 +85,7 @@ export function useEarnCoins() {
 export function useSubmitRedeemRequest() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const demo = isDemoLoggedIn();
   return useMutation({
     mutationFn: async ({
       amount,
@@ -44,6 +98,11 @@ export function useSubmitRedeemRequest() {
       userName: string;
       userEmail: string;
     }) => {
+      if (demo) {
+        const result = demoSubmitRedeem(Number(amount), rewardType);
+        if (!result.success) throw new Error(result.message);
+        return result;
+      }
       if (!actor) throw new Error("Not connected");
       return actor.submitRedeemRequest(amount, rewardType, userName, userEmail);
     },
@@ -56,13 +115,15 @@ export function useSubmitRedeemRequest() {
 
 export function useUserRedeemHistory() {
   const { actor, isFetching } = useActor();
+  const demo = isDemoLoggedIn();
   return useQuery<RedeemRequest[]>({
     queryKey: ["redeemHistory"],
     queryFn: async () => {
+      if (demo) return makeDemoOrders();
       if (!actor) return [];
       return actor.getUserRedeemHistory();
     },
-    enabled: !!actor && !isFetching,
+    enabled: demo || (!!actor && !isFetching),
   });
 }
 
@@ -75,6 +136,7 @@ export function useAllRedeemRequests() {
       return actor.getAllRedeemRequests();
     },
     enabled: !!actor && !isFetching,
+    refetchOnMount: true,
   });
 }
 
@@ -111,14 +173,17 @@ export function useRejectRedeemRequest() {
 // Notice hooks
 export function useAllNotices() {
   const { actor, isFetching } = useActor();
+  const demo = isDemoLoggedIn();
   return useQuery<Notice[]>({
     queryKey: ["notices"],
     queryFn: async () => {
+      if (demo) return [];
       if (!actor) return [];
       return actor.getAllNotices();
     },
-    enabled: !!actor && !isFetching,
+    enabled: demo || (!!actor && !isFetching),
     refetchInterval: 60_000,
+    refetchOnMount: true,
   });
 }
 

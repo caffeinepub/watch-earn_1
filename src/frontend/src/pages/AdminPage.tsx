@@ -13,6 +13,7 @@ import {
   LogOut,
   Pencil,
   PlusCircle,
+  RefreshCw,
   Search,
   Shield,
   Trash2,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { RedeemRequest } from "../backend.d";
 import { RedeemStatus } from "../backend.d";
 import {
@@ -391,13 +393,20 @@ function NoticesSection() {
   const [editMessage, setEditMessage] = useState("");
 
   const handlePost = () => {
-    if (!title.trim() || !message.trim()) return;
+    if (!title.trim() || !message.trim()) {
+      toast.error("Title and message are required");
+      return;
+    }
     postMutation.mutate(
       { title: title.trim(), message: message.trim() },
       {
         onSuccess: () => {
           setTitle("");
           setMessage("");
+          toast.success("Notice published successfully!");
+        },
+        onError: (_err) => {
+          toast.error("Failed to publish notice. Please try again.");
         },
       },
     );
@@ -414,7 +423,13 @@ function NoticesSection() {
     editMutation.mutate(
       { id: editingId, title: editTitle.trim(), message: editMessage.trim() },
       {
-        onSuccess: () => setEditingId(null),
+        onSuccess: () => {
+          setEditingId(null);
+          toast.success("Notice updated!");
+        },
+        onError: (_err) => {
+          toast.error("Failed to update notice. Please try again.");
+        },
       },
     );
   };
@@ -778,7 +793,11 @@ function LiveClock() {
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("requests");
-  const { data: requests, isLoading } = useAllRedeemRequests();
+  const {
+    data: requests,
+    isLoading,
+    refetch: refetchRequests,
+  } = useAllRedeemRequests();
   const approveMutation = useApproveRedeemRequest();
   const rejectMutation = useRejectRedeemRequest();
 
@@ -1069,23 +1088,46 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </div>
 
               {/* Search */}
-              <div className="relative mb-5">
-                <Search
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "oklch(0.50 0.01 255)" }}
-                />
-                <Input
-                  data-ocid="admin.search_input"
-                  placeholder="Search by redeem code (e.g. #GE-7482)"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 rounded-xl text-sm h-10"
+              <div className="flex items-center gap-2 mb-5">
+                <div className="relative flex-1">
+                  <Search
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
+                    style={{ color: "oklch(0.50 0.01 255)" }}
+                  />
+                  <Input
+                    data-ocid="admin.search_input"
+                    placeholder="Search by redeem code (e.g. #GE-7482)"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10 rounded-xl text-sm h-10"
+                    style={{
+                      background: "oklch(0.18 0.012 252)",
+                      border: "1px solid oklch(0.96 0.005 250 / 10%)",
+                      color: "oklch(0.90 0.01 255)",
+                    }}
+                  />
+                </div>
+                <Button
+                  data-ocid="admin.refresh_button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    refetchRequests();
+                    toast.success("Refreshing requests...");
+                  }}
+                  disabled={isLoading}
+                  className="h-10 w-10 rounded-xl shrink-0"
                   style={{
                     background: "oklch(0.18 0.012 252)",
                     border: "1px solid oklch(0.96 0.005 250 / 10%)",
-                    color: "oklch(0.90 0.01 255)",
+                    color: "oklch(0.83 0.16 87)",
                   }}
-                />
+                  title="Refresh requests"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4${isLoading ? " animate-spin" : ""}`}
+                  />
+                </Button>
               </div>
 
               {/* Section divider */}

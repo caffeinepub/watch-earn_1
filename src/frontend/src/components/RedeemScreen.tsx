@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useSubmitRedeemRequest, useUserProfile } from "../hooks/useQueries";
+import { isDemoLoggedIn } from "../utils/demoMode";
 import { AdSlot } from "./AdSlot";
 
 const MIN_COINS = 5000;
@@ -102,7 +103,8 @@ export function RedeemScreen() {
   const canRedeem = coins >= MIN_COINS;
 
   const cooldownRemaining = useCooldownRemaining(profile?.lastRedeemTime);
-  const isOnCooldown = cooldownRemaining > 0;
+  const demo = isDemoLoggedIn();
+  const isOnCooldown = !demo && cooldownRemaining > 0;
 
   const [selectedRupees, setSelectedRupees] = useState(50);
   const [rewardType, setRewardType] = useState<RewardType | null>(null);
@@ -174,12 +176,36 @@ export function RedeemScreen() {
         `Coins Used: ${requiredCoins.toLocaleString()}`,
         `Timestamp: ${timestamp}`,
         `User Principal: ${identity?.getPrincipal().toString() ?? "anonymous"}`,
-      ].join("%0A");
-      const mailtoUrl = `mailto:gmrearn@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`;
-      window.open(mailtoUrl, "_blank");
+      ].join("\n");
+
+      // Send actual email via FormSubmit AJAX (no email client needed)
+      try {
+        await fetch("https://formsubmit.co/ajax/gmrearn@gmail.com", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            _subject: subject,
+            message: body,
+            name: userName,
+            email: userEmail,
+            redeemCode: typeof code === "string" ? code : String(code),
+            amount: `₹${clampedSelected}`,
+            rewardType: rewardLabel,
+          }),
+        });
+      } catch {
+        // email sending failure is non-critical, redeem already saved
+      }
 
       setRedeemStatus("idle");
-      setCongratsCode(code);
+      setCongratsCode(
+        typeof code === "string"
+          ? code
+          : ((code as { redeemCode?: string })?.redeemCode ?? String(code)),
+      );
     } catch {
       setRedeemStatus("error");
       setTimeout(() => setRedeemStatus("idle"), 3000);
@@ -265,7 +291,9 @@ export function RedeemScreen() {
             {[
               { val: "₹50", lbl: "minimum" },
               { val: "₹250", lbl: "maximum" },
-              { val: "24h", lbl: "cooldown" },
+              demo
+                ? { val: "∞", lbl: "no limit" }
+                : { val: "24h", lbl: "cooldown" },
             ].map((item) => (
               <div
                 key={item.lbl}

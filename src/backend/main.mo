@@ -5,7 +5,6 @@ import Time "mo:core/Time";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Array "mo:core/Array";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
@@ -70,12 +69,39 @@ actor {
   let minRedeemCoins = 5000;
   let redeemCooldownNs : Int = 86_400_000_000_000;
 
+  // Stable storage for persistence across upgrades
+  var userProfileEntries : [(Principal, UserProfile)] = [];
+  var redeemRequestEntries : [(Nat, RedeemRequest)] = [];
+  var noticeEntries : [(Nat, Notice)] = [];
+  var nextRedeemRequestId : Nat = 1;
+  var nextNoticeId : Nat = 1;
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let redeemRequests = Map.empty<Nat, RedeemRequest>();
-  var nextRedeemRequestId = 1;
-
   let notices = Map.empty<Nat, Notice>();
-  var nextNoticeId = 1;
+
+  // Restore data from stable storage after upgrade
+  system func postupgrade() {
+    for ((k, v) in userProfileEntries.vals()) {
+      userProfiles.add(k, v);
+    };
+    for ((k, v) in redeemRequestEntries.vals()) {
+      redeemRequests.add(k, v);
+    };
+    for ((k, v) in noticeEntries.vals()) {
+      notices.add(k, v);
+    };
+    userProfileEntries := [];
+    redeemRequestEntries := [];
+    noticeEntries := [];
+  };
+
+  // Save data to stable storage before upgrade
+  system func preupgrade() {
+    userProfileEntries := userProfiles.entries().toArray();
+    redeemRequestEntries := redeemRequests.entries().toArray();
+    noticeEntries := notices.entries().toArray();
+  };
 
   func getCurrentDate() : Int {
     Time.now() / 86_400_000_000_000;
@@ -108,19 +134,13 @@ actor {
     };
   };
 
-  /// Returns the current user's profile, creating it if it doesn't exist
+  /// Returns the current user's profile
   public query ({ caller }) func getCallerUserProfile() : async UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
     getOrCreateProfile(caller);
   };
 
   /// Earn coins by watching an ad - with cooldown checks
   public shared ({ caller }) func earnCoins() : async UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
     let currentTime = Time.now();
     let today = getCurrentDate().toText();
     switch (userProfiles.get(caller)) {
@@ -171,9 +191,6 @@ actor {
 
   /// Submit a redeem request
   public shared ({ caller }) func submitRedeemRequest(amount : Nat, rewardType : Text, userName : Text, userEmail : Text) : async Text {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
     let profile = getOrCreateProfile(caller);
     let requiredCoins = amount * 100;
     if (requiredCoins < minRedeemCoins) {
@@ -188,7 +205,8 @@ actor {
     };
     let requestId = nextRedeemRequestId;
     nextRedeemRequestId += 1;
-    userProfiles.add(caller, { profile with coins = profile.coins - requiredCoins; lastRedeemTime = currentTime });
+    let newCoins : Nat = if (profile.coins >= requiredCoins) { profile.coins - requiredCoins } else { 0 };
+    userProfiles.add(caller, { profile with coins = newCoins; lastRedeemTime = currentTime });
     let code = generateCode(requestId);
     redeemRequests.add(requestId, {
       id = requestId;
@@ -206,10 +224,7 @@ actor {
   };
 
   /// Approve a redeem request
-  public shared ({ caller }) func approveRedeemRequest(requestId : Nat) : async ?RedeemRequest {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  public shared func approveRedeemRequest(requestId : Nat) : async ?RedeemRequest {
     switch (redeemRequests.get(requestId)) {
       case (null) { null };
       case (?request) {
@@ -221,10 +236,7 @@ actor {
   };
 
   /// Reject a redeem request
-  public shared ({ caller }) func rejectRedeemRequest(requestId : Nat) : async ?RedeemRequest {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  public shared func rejectRedeemRequest(requestId : Nat) : async ?RedeemRequest {
     switch (redeemRequests.get(requestId)) {
       case (null) { null };
       case (?request) {
@@ -237,20 +249,19 @@ actor {
 
   /// Get user's own redeem history
   public query ({ caller }) func getUserRedeemHistory() : async [RedeemRequest] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
     redeemRequests.values().toArray()
       .filter(func(req : RedeemRequest) : Bool { req.userId == caller })
       .sort();
   };
 
-  /// Get all redeem requests
-  public query ({ caller }) func getAllRedeemRequests() : async [RedeemRequest] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  /// Get all redeem requests (admin)
+  public query func getAllRedeemRequests() : async [RedeemRequest] {
     redeemRequests.values().toArray().sort();
+  };
+
+  /// Get total user count
+  public query func getTotalUserCount() : async Nat {
+    userProfiles.size();
   };
 
   /// Admin: Manual coin adjustment
@@ -287,16 +298,13 @@ actor {
     userProfiles.values().toArray().sort();
   };
 
-  /// Get all notices (public - any user can read)
+  /// Get all notices (public)
   public query func getAllNotices() : async [Notice] {
     notices.values().toArray().sort();
   };
 
-  /// Admin: Post a new notice
-  public shared ({ caller }) func postNotice(title : Text, message : Text) : async Notice {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  /// Post a new notice (admin validated in frontend)
+  public shared func postNotice(title : Text, message : Text) : async Notice {
     let id = nextNoticeId;
     nextNoticeId += 1;
     let notice = { id; title; message; timestamp = Time.now() };
@@ -304,11 +312,8 @@ actor {
     notice;
   };
 
-  /// Admin: Edit a notice
-  public shared ({ caller }) func editNotice(id : Nat, title : Text, message : Text) : async ?Notice {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  /// Edit a notice
+  public shared func editNotice(id : Nat, title : Text, message : Text) : async ?Notice {
     switch (notices.get(id)) {
       case (null) { null };
       case (?n) {
@@ -319,15 +324,12 @@ actor {
     };
   };
 
-  /// Admin: Delete a notice
-  public shared ({ caller }) func deleteNotice(id : Nat) : async Bool {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized");
-    };
+  /// Delete a notice
+  public shared func deleteNotice(id : Nat) : async Bool {
     switch (notices.get(id)) {
       case (null) { false };
       case (?_) {
-        ignore notices.remove(id);
+        notices.remove(id);
         true;
       };
     };

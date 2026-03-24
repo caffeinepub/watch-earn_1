@@ -54,6 +54,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile>;
     getCallerUserRole(): Promise<UserRole>;
     getCurrentDateTimestamp(): Promise<bigint>;
+    getTotalUserCount(): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile>;
     getUserRedeemHistory(): Promise<Array<RedeemRequest>>;
     isCallerAdmin(): Promise<boolean>;

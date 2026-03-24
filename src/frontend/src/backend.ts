@@ -158,6 +158,7 @@ export interface backendInterface {
      * / Utility: Get current date (YYYY-MM-DD)
      */
     getCurrentDateTimestamp(): Promise<bigint>;
+    getTotalUserCount(): Promise<bigint>;
     /**
      * / Admin: Get user profile by Principal (admin only)
      */
@@ -407,6 +408,9 @@ export class Backend implements backendInterface {
     }
     async deleteNotice(arg0: bigint): Promise<boolean> {
         return await this.actor.deleteNotice(arg0);
+    }
+    async getTotalUserCount(): Promise<bigint> {
+        return await this.actor.getTotalUserCount();
     }
 }
 function from_candid_RedeemRequest_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RedeemRequest): RedeemRequest {

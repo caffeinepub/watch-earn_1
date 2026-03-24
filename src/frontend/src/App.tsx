@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { Clock, Gamepad2, Gift, LogOut, Star } from "lucide-react";
+import { Clock, Gamepad2, Gift, LogOut, Star, TestTube2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { AdSlot } from "./components/AdSlot";
@@ -14,11 +14,13 @@ import { useAllNotices, useUserProfile } from "./hooks/useQueries";
 import { AdminPage } from "./pages/AdminPage";
 import { CreditsPage } from "./pages/CreditsPage";
 import { FAQPage } from "./pages/FAQPage";
+import { FeedbackPage } from "./pages/FeedbackPage";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 import { TermsPage } from "./pages/TermsPage";
+import { demoLogout, isDemoLoggedIn } from "./utils/demoMode";
 
 type Tab = "earn" | "redeem" | "orders" | "credits";
-type Page = "app" | "admin" | "terms" | "faq" | "privacy";
+type Page = "app" | "admin" | "terms" | "faq" | "privacy" | "feedback";
 
 function getInitialPage(): Page {
   const path = window.location.pathname;
@@ -26,17 +28,26 @@ function getInitialPage(): Page {
   if (path.startsWith("/terms")) return "terms";
   if (path.startsWith("/faq")) return "faq";
   if (path.startsWith("/privacy")) return "privacy";
+  if (path.startsWith("/feedback")) return "feedback";
   return "app";
 }
 
-function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
+function AppShell({
+  onNavigate,
+  demoMode,
+  onDemoLogout,
+}: {
+  onNavigate: (page: Page) => void;
+  demoMode: boolean;
+  onDemoLogout: () => void;
+}) {
   const [activeTab, setActiveTab] = useState<Tab>("earn");
   const { clear, identity, isInitializing } = useInternetIdentity();
   const { data: profile } = useUserProfile();
   const { data: notices = [] } = useAllNotices();
   const coins = profile ? Number(profile.coins) : 0;
 
-  if (isInitializing) {
+  if (isInitializing && !demoMode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -52,9 +63,17 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
     );
   }
 
-  if (!identity) {
-    return <LoginScreen />;
+  if (!identity && !demoMode) {
+    return <LoginScreen onDemoLogin={onDemoLogout /* won't reach here */} />;
   }
+
+  const handleLogout = () => {
+    if (demoMode) {
+      onDemoLogout();
+    } else {
+      clear();
+    }
+  };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "earn", label: "Earn", icon: <Gamepad2 className="w-4 h-4" /> },
@@ -71,6 +90,25 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
           "linear-gradient(160deg, oklch(0.12 0.008 255) 0%, oklch(0.17 0.012 250) 100%)",
       }}
     >
+      {/* Demo mode banner */}
+      {demoMode && (
+        <div
+          className="flex items-center justify-center gap-2 py-1.5 text-xs font-semibold"
+          style={{
+            background: "oklch(0.45 0.15 87 / 25%)",
+            borderBottom: "1px solid oklch(0.83 0.16 87 / 30%)",
+          }}
+        >
+          <TestTube2
+            className="w-3.5 h-3.5"
+            style={{ color: "oklch(0.83 0.16 87)" }}
+          />
+          <span style={{ color: "oklch(0.83 0.16 87)" }}>
+            Demo Mode — Coins reset daily at midnight
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 card-surface border-b border-border/50 px-4 py-3">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -96,7 +134,7 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
             <NotificationsPanel notices={notices} />
             <Button
               data-ocid="nav.secondary_button"
-              onClick={clear}
+              onClick={handleLogout}
               variant="outline"
               size="sm"
               className="rounded-full text-xs border-white/10 hover:border-white/20 hover:bg-white/5"
@@ -138,7 +176,6 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
         </div>
       </nav>
 
-      {/* AdSense: Replace data-ad-client with your Publisher ID */}
       {/* Ad Banner — below tab navigation */}
       <div className="max-w-md mx-auto w-full px-4 py-2">
         <AdSlot size="banner" />
@@ -196,7 +233,6 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
         </div>
       </main>
 
-      {/* AdSense: Replace data-ad-client with your Publisher ID */}
       {/* Ad Banner — above footer */}
       <div className="max-w-md mx-auto w-full px-4 py-3">
         <AdSlot size="banner" />
@@ -231,6 +267,15 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
           >
             Privacy Policy
           </button>
+          <span className="text-muted-foreground/30 text-xs">|</span>
+          <button
+            type="button"
+            data-ocid="nav.feedback.link"
+            onClick={() => onNavigate("feedback")}
+            className="text-muted-foreground/50 text-xs hover:text-muted-foreground/70 transition-colors underline underline-offset-2"
+          >
+            Feedback
+          </button>
         </div>
         <p className="text-muted-foreground/40 text-xs">
           © {new Date().getFullYear()}. Built with ❤️ using{" "}
@@ -255,11 +300,21 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
 export default function App() {
   const [page, setPage] = useState<Page>(getInitialPage);
+  const [demoMode, setDemoMode] = useState(() => isDemoLoggedIn());
 
   const navigate = (p: Page) => {
     setPage(p);
     const path = p === "app" ? "/" : `/${p}`;
     window.history.pushState({}, "", path);
+  };
+
+  const handleDemoLogin = () => {
+    setDemoMode(true);
+  };
+
+  const handleDemoLogout = () => {
+    demoLogout();
+    setDemoMode(false);
   };
 
   if (page === "admin") {
@@ -298,5 +353,64 @@ export default function App() {
     );
   }
 
-  return <AppShell onNavigate={navigate} />;
+  if (page === "feedback") {
+    return (
+      <>
+        <FeedbackPage onBack={() => navigate("app")} />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (demoMode) {
+    return (
+      <AppShell
+        onNavigate={navigate}
+        demoMode={true}
+        onDemoLogout={handleDemoLogout}
+      />
+    );
+  }
+
+  return (
+    <AppShellWithLogin onNavigate={navigate} onDemoLogin={handleDemoLogin} />
+  );
+}
+
+function AppShellWithLogin({
+  onNavigate,
+  onDemoLogin,
+}: {
+  onNavigate: (page: Page) => void;
+  onDemoLogin: () => void;
+}) {
+  const { identity, isInitializing } = useInternetIdentity();
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full gold-gradient flex items-center justify-center">
+            <Gamepad2
+              className="w-6 h-6"
+              style={{ color: "oklch(0.14 0.005 255)" }}
+            />
+          </div>
+          <div className="w-5 h-5 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!identity) {
+    return <LoginScreen onDemoLogin={onDemoLogin} />;
+  }
+
+  return (
+    <AppShell
+      onNavigate={onNavigate}
+      demoMode={false}
+      onDemoLogout={() => {}}
+    />
+  );
 }

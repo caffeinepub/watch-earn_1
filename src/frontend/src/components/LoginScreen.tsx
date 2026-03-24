@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Loader2, LogIn } from "lucide-react";
-import { motion } from "motion/react";
+import { ChevronDown, Gamepad2, Loader2, LogIn, TestTube2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { DemoLoginForm } from "./DemoLoginForm";
 
 const FEATURES = [
   { icon: "🎮", label: "Play games & watch ads to earn coins" },
@@ -9,8 +11,13 @@ const FEATURES = [
   { icon: "💰", label: "Redeem ₹50 for every 5,000 coins" },
 ];
 
-export function LoginScreen() {
+interface LoginScreenProps {
+  onDemoLogin: () => void;
+}
+
+export function LoginScreen({ onDemoLogin }: LoginScreenProps) {
   const { login, isLoggingIn } = useInternetIdentity();
+  const [showDemo, setShowDemo] = useState(false);
 
   return (
     <div
@@ -76,9 +83,47 @@ export function LoginScreen() {
           )}
         </Button>
 
-        <p className="text-muted-foreground text-xs mt-4">
+        <p className="text-muted-foreground text-xs mt-4 mb-6">
           Secure · Free · No credit card needed
         </p>
+
+        {/* Demo account toggle */}
+        <div className="border-t border-white/10 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowDemo((p) => !p)}
+            className="flex items-center gap-2 mx-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <TestTube2
+              className="w-3.5 h-3.5"
+              style={{ color: "oklch(0.83 0.16 87)" }}
+            />
+            <span style={{ color: "oklch(0.83 0.16 87)" }}>
+              Demo / Test Login
+            </span>
+            <ChevronDown
+              className="w-3.5 h-3.5 transition-transform"
+              style={{
+                color: "oklch(0.83 0.16 87)",
+                transform: showDemo ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
+          </button>
+
+          <AnimatePresence>
+            {showDemo && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden mt-4"
+              >
+                <DemoLoginForm onSuccess={onDemoLogin} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
 
       <div className="flex flex-col items-center gap-1 mt-8">
