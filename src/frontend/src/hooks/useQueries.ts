@@ -99,8 +99,23 @@ export function useSubmitRedeemRequest() {
       userEmail: string;
     }) => {
       if (demo) {
+        // Save locally for demo user's own order history
         const result = demoSubmitRedeem(Number(amount), rewardType);
         if (!result.success) throw new Error(result.message);
+        // Also submit to backend (best-effort) so admin panel can see it
+        // Ignore backend errors (cooldown etc.) - demo UX always succeeds
+        if (actor) {
+          try {
+            await actor.submitRedeemRequest(
+              amount,
+              rewardType,
+              "Demo User",
+              "demo@gamerearn.com",
+            );
+          } catch {
+            // silently ignore backend errors for demo account
+          }
+        }
         return result;
       }
       if (!actor) throw new Error("Not connected");
@@ -109,6 +124,7 @@ export function useSubmitRedeemRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["redeemHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["allRedeemRequests"] });
     },
   });
 }
@@ -137,6 +153,7 @@ export function useAllRedeemRequests() {
     },
     enabled: !!actor && !isFetching,
     refetchOnMount: true,
+    refetchInterval: 30_000,
   });
 }
 

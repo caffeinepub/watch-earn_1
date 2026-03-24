@@ -70,11 +70,11 @@ actor {
   let redeemCooldownNs : Int = 86_400_000_000_000;
 
   // Stable storage for persistence across upgrades
-  var userProfileEntries : [(Principal, UserProfile)] = [];
-  var redeemRequestEntries : [(Nat, RedeemRequest)] = [];
-  var noticeEntries : [(Nat, Notice)] = [];
-  var nextRedeemRequestId : Nat = 1;
-  var nextNoticeId : Nat = 1;
+  stable var userProfileEntries : [(Principal, UserProfile)] = [];
+  stable var redeemRequestEntries : [(Nat, RedeemRequest)] = [];
+  stable var noticeEntries : [(Nat, Notice)] = [];
+  stable var nextRedeemRequestId : Nat = 1;
+  stable var nextNoticeId : Nat = 1;
 
   let userProfiles = Map.empty<Principal, UserProfile>();
   let redeemRequests = Map.empty<Nat, RedeemRequest>();

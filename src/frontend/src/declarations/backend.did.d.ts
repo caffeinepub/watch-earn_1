@@ -10,6 +10,12 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface Notice {
+  'id' : bigint,
+  'title' : string,
+  'message' : string,
+  'timestamp' : bigint,
+}
 export interface RedeemRequest {
   'id' : bigint,
   'status' : RedeemStatus,
@@ -40,50 +46,70 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   /**
-   * / Admin: Manual coin adjustment for user
+   * / Admin: Manual coin adjustment
    */
   'adjustUserCoins' : ActorMethod<[Principal, bigint], UserProfile>,
   /**
-   * / Approve a redeem request (admin only)
+   * / Approve a redeem request
    */
   'approveRedeemRequest' : ActorMethod<[bigint], [] | [RedeemRequest]>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  /**
+   * / Delete a notice
+   */
+  'deleteNotice' : ActorMethod<[bigint], boolean>,
   /**
    * / Earn coins by watching an ad - with cooldown checks
    */
   'earnCoins' : ActorMethod<[], UserProfile>,
   /**
-   * / Get all redeem requests (admin only)
+   * / Edit a notice
+   */
+  'editNotice' : ActorMethod<[bigint, string, string], [] | [Notice]>,
+  /**
+   * / Get all notices (public)
+   */
+  'getAllNotices' : ActorMethod<[], Array<Notice>>,
+  /**
+   * / Get all redeem requests (admin)
    */
   'getAllRedeemRequests' : ActorMethod<[], Array<RedeemRequest>>,
   /**
-   * / Admin: Get all user profiles (admin only)
+   * / Admin: Get all user profiles
    */
   'getAllUserProfiles' : ActorMethod<[], Array<UserProfile>>,
   /**
-   * / Returns the current user's profile, creating it if it doesn't exist
+   * / Returns the current user's profile
    */
   'getCallerUserProfile' : ActorMethod<[], UserProfile>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   /**
-   * / Utility: Get current date (YYYY-MM-DD)
+   * / Utility: Get current date timestamp
    */
   'getCurrentDateTimestamp' : ActorMethod<[], bigint>,
   /**
-   * / Admin: Get user profile by Principal (admin only)
+   * / Get total user count
+   */
+  'getTotalUserCount' : ActorMethod<[], bigint>,
+  /**
+   * / Admin: Get user profile by Principal
    */
   'getUserProfile' : ActorMethod<[Principal], UserProfile>,
   /**
-   * / Get user's redeem history
+   * / Get user's own redeem history
    */
   'getUserRedeemHistory' : ActorMethod<[], Array<RedeemRequest>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   /**
-   * / Reject a redeem request (admin only)
+   * / Post a new notice (admin validated in frontend)
+   */
+  'postNotice' : ActorMethod<[string, string], Notice>,
+  /**
+   * / Reject a redeem request
    */
   'rejectRedeemRequest' : ActorMethod<[bigint], [] | [RedeemRequest]>,
   /**
-   * / Submit a redeem request for coins
+   * / Submit a redeem request
    */
   'submitRedeemRequest' : ActorMethod<[bigint, string, string, string], string>,
 }

@@ -89,6 +89,12 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface Notice {
+    id: bigint;
+    title: string;
+    message: string;
+    timestamp: bigint;
+}
 export interface RedeemRequest {
     id: bigint;
     status: RedeemStatus;
@@ -110,12 +116,6 @@ export interface UserProfile {
     nextAllowedAdTime: bigint;
     fastClickDisabledUntil: bigint;
 }
-export interface Notice {
-    id: bigint;
-    title: string;
-    message: string;
-    timestamp: bigint;
-}
 export enum RedeemStatus {
     pending = "pending",
     approved = "approved",
@@ -129,59 +129,74 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     /**
-     * / Admin: Manual coin adjustment for user
+     * / Admin: Manual coin adjustment
      */
     adjustUserCoins(user: Principal, coins: bigint): Promise<UserProfile>;
     /**
-     * / Approve a redeem request (admin only)
+     * / Approve a redeem request
      */
     approveRedeemRequest(requestId: bigint): Promise<RedeemRequest | null>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    /**
+     * / Delete a notice
+     */
+    deleteNotice(id: bigint): Promise<boolean>;
     /**
      * / Earn coins by watching an ad - with cooldown checks
      */
     earnCoins(): Promise<UserProfile>;
     /**
-     * / Get all redeem requests (admin only)
+     * / Edit a notice
+     */
+    editNotice(id: bigint, title: string, message: string): Promise<Notice | null>;
+    /**
+     * / Get all notices (public)
+     */
+    getAllNotices(): Promise<Array<Notice>>;
+    /**
+     * / Get all redeem requests (admin)
      */
     getAllRedeemRequests(): Promise<Array<RedeemRequest>>;
     /**
-     * / Admin: Get all user profiles (admin only)
+     * / Admin: Get all user profiles
      */
     getAllUserProfiles(): Promise<Array<UserProfile>>;
     /**
-     * / Returns the current user's profile, creating it if it doesn't exist
+     * / Returns the current user's profile
      */
     getCallerUserProfile(): Promise<UserProfile>;
     getCallerUserRole(): Promise<UserRole>;
     /**
-     * / Utility: Get current date (YYYY-MM-DD)
+     * / Utility: Get current date timestamp
      */
     getCurrentDateTimestamp(): Promise<bigint>;
+    /**
+     * / Get total user count
+     */
     getTotalUserCount(): Promise<bigint>;
     /**
-     * / Admin: Get user profile by Principal (admin only)
+     * / Admin: Get user profile by Principal
      */
     getUserProfile(user: Principal): Promise<UserProfile>;
     /**
-     * / Get user's redeem history
+     * / Get user's own redeem history
      */
     getUserRedeemHistory(): Promise<Array<RedeemRequest>>;
     isCallerAdmin(): Promise<boolean>;
     /**
-     * / Reject a redeem request (admin only)
+     * / Post a new notice (admin validated in frontend)
+     */
+    postNotice(title: string, message: string): Promise<Notice>;
+    /**
+     * / Reject a redeem request
      */
     rejectRedeemRequest(requestId: bigint): Promise<RedeemRequest | null>;
     /**
-     * / Submit a redeem request for coins
+     * / Submit a redeem request
      */
     submitRedeemRequest(amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
-    getAllNotices(): Promise<Array<Notice>>;
-    postNotice(title: string, message: string): Promise<Notice>;
-    editNotice(id: bigint, title: string, message: string): Promise<Notice | null>;
-    deleteNotice(id: bigint): Promise<boolean>;
 }
-import type { RedeemRequest as _RedeemRequest, RedeemStatus as _RedeemStatus, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Notice as _Notice, RedeemRequest as _RedeemRequest, RedeemStatus as _RedeemStatus, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -240,6 +255,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteNotice(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteNotice(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteNotice(arg0);
+            return result;
+        }
+    }
     async earnCoins(): Promise<UserProfile> {
         if (this.processError) {
             try {
@@ -254,18 +283,46 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async editNotice(arg0: bigint, arg1: string, arg2: string): Promise<Notice | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.editNotice(arg0, arg1, arg2);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.editNotice(arg0, arg1, arg2);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllNotices(): Promise<Array<Notice>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllNotices();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllNotices();
+            return result;
+        }
+    }
     async getAllRedeemRequests(): Promise<Array<RedeemRequest>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllRedeemRequests();
-                return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAllRedeemRequests();
-            return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllUserProfiles(): Promise<Array<UserProfile>> {
@@ -300,14 +357,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n9(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCurrentDateTimestamp(): Promise<bigint> {
@@ -321,6 +378,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getCurrentDateTimestamp();
+            return result;
+        }
+    }
+    async getTotalUserCount(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTotalUserCount();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTotalUserCount();
             return result;
         }
     }
@@ -342,14 +413,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserRedeemHistory();
-                return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserRedeemHistory();
-            return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -363,6 +434,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async postNotice(arg0: string, arg1: string): Promise<Notice> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.postNotice(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.postNotice(arg0, arg1);
             return result;
         }
     }
@@ -394,24 +479,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getAllNotices(): Promise<Array<Notice>> {
-        const result = await this.actor.getAllNotices();
-        return result as any;
-    }
-    async postNotice(arg0: string, arg1: string): Promise<Notice> {
-        const result = await this.actor.postNotice(arg0, arg1);
-        return result as any;
-    }
-    async editNotice(arg0: bigint, arg1: string, arg2: string): Promise<Notice | null> {
-        const result = await this.actor.editNotice(arg0, arg1, arg2);
-        return result.length === 0 ? null : result[0] as any;
-    }
-    async deleteNotice(arg0: bigint): Promise<boolean> {
-        return await this.actor.deleteNotice(arg0);
-    }
-    async getTotalUserCount(): Promise<bigint> {
-        return await this.actor.getTotalUserCount();
-    }
 }
 function from_candid_RedeemRequest_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RedeemRequest): RedeemRequest {
     return from_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -419,11 +486,14 @@ function from_candid_RedeemRequest_n2(_uploadFile: (file: ExternalBlob) => Promi
 function from_candid_RedeemStatus_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RedeemStatus): RedeemStatus {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n10(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
 }
 function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_RedeemRequest]): RedeemRequest | null {
     return value.length === 0 ? null : from_candid_RedeemRequest_n2(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Notice]): Notice | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
@@ -461,7 +531,7 @@ function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint
         amount: value.amount
     };
 }
-function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -479,7 +549,7 @@ function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): RedeemStatus {
     return "pending" in value ? RedeemStatus.pending : "approved" in value ? RedeemStatus.approved : "rejected" in value ? RedeemStatus.rejected : value;
 }
-function from_candid_vec_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_RedeemRequest>): Array<RedeemRequest> {
+function from_candid_vec_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_RedeemRequest>): Array<RedeemRequest> {
     return value.map((x)=>from_candid_RedeemRequest_n2(_uploadFile, _downloadFile, x));
 }
 function to_candid_UserRole_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {

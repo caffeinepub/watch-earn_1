@@ -39,21 +39,32 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const Notice = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'message' : IDL.Text,
+  'timestamp' : IDL.Int,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'adjustUserCoins' : IDL.Func([IDL.Principal, IDL.Nat], [UserProfile], []),
   'approveRedeemRequest' : IDL.Func([IDL.Nat], [IDL.Opt(RedeemRequest)], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'deleteNotice' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'earnCoins' : IDL.Func([], [UserProfile], []),
+  'editNotice' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [IDL.Opt(Notice)], []),
+  'getAllNotices' : IDL.Func([], [IDL.Vec(Notice)], ['query']),
   'getAllRedeemRequests' : IDL.Func([], [IDL.Vec(RedeemRequest)], ['query']),
   'getAllUserProfiles' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [UserProfile], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCurrentDateTimestamp' : IDL.Func([], [IDL.Int], ['query']),
+  'getTotalUserCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func([IDL.Principal], [UserProfile], ['query']),
   'getUserRedeemHistory' : IDL.Func([], [IDL.Vec(RedeemRequest)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'postNotice' : IDL.Func([IDL.Text, IDL.Text], [Notice], []),
   'rejectRedeemRequest' : IDL.Func([IDL.Nat], [IDL.Opt(RedeemRequest)], []),
   'submitRedeemRequest' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
@@ -96,21 +107,36 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const Notice = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'message' : IDL.Text,
+    'timestamp' : IDL.Int,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'adjustUserCoins' : IDL.Func([IDL.Principal, IDL.Nat], [UserProfile], []),
     'approveRedeemRequest' : IDL.Func([IDL.Nat], [IDL.Opt(RedeemRequest)], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'deleteNotice' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'earnCoins' : IDL.Func([], [UserProfile], []),
+    'editNotice' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text],
+        [IDL.Opt(Notice)],
+        [],
+      ),
+    'getAllNotices' : IDL.Func([], [IDL.Vec(Notice)], ['query']),
     'getAllRedeemRequests' : IDL.Func([], [IDL.Vec(RedeemRequest)], ['query']),
     'getAllUserProfiles' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [UserProfile], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCurrentDateTimestamp' : IDL.Func([], [IDL.Int], ['query']),
+    'getTotalUserCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func([IDL.Principal], [UserProfile], ['query']),
     'getUserRedeemHistory' : IDL.Func([], [IDL.Vec(RedeemRequest)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'postNotice' : IDL.Func([IDL.Text, IDL.Text], [Notice], []),
     'rejectRedeemRequest' : IDL.Func([IDL.Nat], [IDL.Opt(RedeemRequest)], []),
     'submitRedeemRequest' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
