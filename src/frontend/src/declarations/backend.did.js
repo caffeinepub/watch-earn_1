@@ -71,6 +71,11 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'logRedeemRecord' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -140,6 +145,11 @@ export const idlFactory = ({ IDL }) => {
     'rejectRedeemRequest' : IDL.Func([IDL.Nat], [IDL.Opt(RedeemRequest)], []),
     'submitRedeemRequest' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text],
+        [],
+      ),
+    'logRedeemRecord' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
         [IDL.Text],
         [],
       ),

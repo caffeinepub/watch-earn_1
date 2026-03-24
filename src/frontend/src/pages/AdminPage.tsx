@@ -26,6 +26,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { RedeemRequest } from "../backend.d";
 import { RedeemStatus } from "../backend.d";
+import { useActor } from "../hooks/useActor";
 import {
   useAllNotices,
   useAllRedeemRequests,
@@ -381,6 +382,8 @@ function StatCard({
 }
 
 function NoticesSection() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const actorReady = !!actor && !actorFetching;
   const { data: notices = [], isLoading } = useAllNotices();
   const postMutation = usePostNotice();
   const editMutation = useEditNotice();
@@ -395,6 +398,10 @@ function NoticesSection() {
   const handlePost = () => {
     if (!title.trim() || !message.trim()) {
       toast.error("Title and message are required");
+      return;
+    }
+    if (!actorReady) {
+      toast.error("Backend not connected. Please wait and try again.");
       return;
     }
     postMutation.mutate(
@@ -518,12 +525,15 @@ function NoticesSection() {
             data-ocid="admin.post_notice_button"
             onClick={handlePost}
             disabled={
-              !title.trim() || !message.trim() || postMutation.isPending
+              !title.trim() ||
+              !message.trim() ||
+              postMutation.isPending ||
+              !actorReady
             }
             className="w-full h-10 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{
               background:
-                !title.trim() || !message.trim()
+                !title.trim() || !message.trim() || !actorReady
                   ? "oklch(0.28 0.01 255)"
                   : "linear-gradient(135deg, oklch(0.85 0.17 90), oklch(0.78 0.16 82))",
               color: "oklch(0.14 0.005 255)",
@@ -532,6 +542,11 @@ function NoticesSection() {
           >
             {postMutation.isPending ? (
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            ) : !actorReady ? (
+              <>
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin mr-1.5" />
+                Connecting...
+              </>
             ) : (
               <>
                 <Bell className="w-3.5 h-3.5 mr-1.5" /> Publish Notice
@@ -1227,18 +1242,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         className="py-5 text-center flex flex-col items-center gap-1 border-t"
         style={{ borderColor: "oklch(0.96 0.005 250 / 6%)" }}
       >
-        <p className="text-muted-foreground/40 text-xs">
-          © {new Date().getFullYear()}. Built with ❤️ using{" "}
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-muted-foreground/60 transition-colors"
-          >
-            caffeine.ai
-          </a>
-        </p>
         <p className="text-muted-foreground/30 text-xs">
+          ©{new Date().getFullYear()} Gamer Earn — Built with Passion 🎮
+        </p>
+        <p className="text-muted-foreground/40 text-xs">
           Created and maintained by Tanmoy Saha
         </p>
       </footer>

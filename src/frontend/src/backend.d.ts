@@ -112,4 +112,5 @@ export interface backendInterface {
      * / Submit a redeem request
      */
     submitRedeemRequest(amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
+    logRedeemRecord(code: string, amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
 }

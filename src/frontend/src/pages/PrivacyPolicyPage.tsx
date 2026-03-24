@@ -50,7 +50,7 @@ const sections = [
   {
     title: "Contact Us",
     content:
-      "Privacy ke baare mein koi bhi sawaal ya concern ho to yahan contact karein:\n\nEmail: gmrearn@gmail.com\nSupport: usersupport18@gmail.com\n\nHum 24-72 ghante mein respond karte hain.",
+      "Privacy ke baare mein koi bhi sawaal ya concern ho to yahan contact karein:\n\nEmail: gmrearn@gmail.com\nSupport: usersupport18@gmail.com\n\nHum jald se jald respond karte hain.",
   },
 ];
 

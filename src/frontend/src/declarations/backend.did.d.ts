@@ -112,6 +112,10 @@ export interface _SERVICE {
    * / Submit a redeem request
    */
   'submitRedeemRequest' : ActorMethod<[bigint, string, string, string], string>,
+  /**
+   * / Log a redeem entry without coin checks (for demo)
+   */
+  'logRedeemRecord' : ActorMethod<[string, bigint, string, string, string], string>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

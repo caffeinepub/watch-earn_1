@@ -149,12 +149,13 @@ export function RedeemScreen() {
     if (!isFormValid || !rewardType) return;
     setRedeemStatus("loading");
     try {
-      const code = await redeemMutation.mutateAsync({
+      const rawCode = await redeemMutation.mutateAsync({
         amount: BigInt(clampedSelected),
         rewardType,
         userName: userName.trim(),
         userEmail: userEmail.trim(),
       });
+      const code = String(rawCode);
 
       if (!emailLocked) {
         localStorage.setItem("ge_user_email", userEmail.trim());
@@ -191,7 +192,7 @@ export function RedeemScreen() {
             message: body,
             name: userName,
             email: userEmail,
-            redeemCode: typeof code === "string" ? code : String(code),
+            redeemCode: code,
             amount: `₹${clampedSelected}`,
             rewardType: rewardLabel,
           }),
@@ -201,11 +202,7 @@ export function RedeemScreen() {
       }
 
       setRedeemStatus("idle");
-      setCongratsCode(
-        typeof code === "string"
-          ? code
-          : ((code as { redeemCode?: string })?.redeemCode ?? String(code)),
-      );
+      setCongratsCode(code);
     } catch {
       setRedeemStatus("error");
       setTimeout(() => setRedeemStatus("idle"), 3000);
@@ -1032,8 +1029,7 @@ export function RedeemScreen() {
           <div className="relative z-10 flex flex-col items-center gap-4 py-2">
             <p className="text-foreground text-sm leading-relaxed">
               Your reward will be sent in{" "}
-              <span className="font-bold gold-text">24–72 hours</span> via
-              email.
+              <span className="font-bold gold-text">3–7 days</span> via email.
             </p>
 
             {/* Ticket-style code box */}

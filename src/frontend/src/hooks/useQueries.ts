@@ -1,51 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Notice, RedeemRequest, UserProfile } from "../backend.d";
+import { RedeemStatus } from "../backend.d";
 import {
   demoEarnCoins,
   demoSubmitRedeem,
-  getDemoOrders,
   getDemoProfile,
   isDemoLoggedIn,
 } from "../utils/demoMode";
 import { useActor } from "./useActor";
 
-// ── Demo helpers ────────────────────────────────────────────────────────────
+export { RedeemStatus };
 
-function makeDemoProfile(): UserProfile | null {
-  const s = getDemoProfile();
-  if (!s) return null;
-  return {
-    id: "demo",
-    email: s.email,
-    username: "DemoUser",
-    coins: BigInt(s.coins),
-    // Demo account: no cooldowns ever
-    nextAllowedAdTime: BigInt(0),
-    fastClickDisabledUntil: BigInt(0),
-    dailyAdsWatched: BigInt(0),
-    lastAdDate: "",
-    lastRedeemTime: BigInt(0),
-    fastClickCount: BigInt(0),
-  } as unknown as UserProfile;
+function getLoggedInEmail(): string {
+  // Demo account
+  const demo = isDemoLoggedIn();
+  if (demo) return "demo@gamerearn.com";
+  // Regular user
+  return localStorage.getItem("ge_user_email") ?? "";
 }
-
-function makeDemoOrders(): RedeemRequest[] {
-  return getDemoOrders().map(
-    (o) =>
-      ({
-        id: BigInt(o.id),
-        redeemCode: o.redeemCode,
-        amount: BigInt(o.amount),
-        rewardType: o.rewardType,
-        status: o.status,
-        userEmail: getDemoProfile()?.email ?? "",
-        userName: "DemoUser",
-        createdAt: BigInt(o.createdAt),
-      }) as unknown as RedeemRequest,
-  );
-}
-
-// ── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useUserProfile() {
   const { actor, isFetching } = useActor();
@@ -53,14 +25,29 @@ export function useUserProfile() {
   return useQuery<UserProfile | null>({
     queryKey: ["userProfile"],
     queryFn: async () => {
-      if (demo) return makeDemoProfile();
+      if (demo) {
+        const p = getDemoProfile();
+        if (!p) return null;
+        // Map demo session to UserProfile shape
+        return {
+          coins: BigInt(p.coins),
+          dailyAdsWatched: BigInt(p.dailyAdsWatched),
+          lastAdDate: "",
+          nextAllowedAdTime: BigInt(0),
+          fastClickCount: BigInt(0),
+          fastClickDisabledUntil: BigInt(0),
+          lastRedeemTime: BigInt(0),
+        } as unknown as UserProfile;
+      }
       if (!actor) return null;
       return actor.getCallerUserProfile();
     },
     enabled: demo || (!!actor && !isFetching),
-    refetchInterval: false,
   });
 }
+
+// Alias for backward compat
+export const useCallerProfile = useUserProfile;
 
 export function useEarnCoins() {
   const { actor } = useActor();
@@ -71,7 +58,7 @@ export function useEarnCoins() {
       if (demo) {
         const result = demoEarnCoins(100);
         if (!result.success) throw new Error(result.message);
-        return result;
+        return result.newCoins;
       }
       if (!actor) throw new Error("Not connected");
       return actor.earnCoins();
@@ -80,6 +67,12 @@ export function useEarnCoins() {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     },
   });
+}
+
+// Generate a unique redeem code client-side
+function generateRedeemCode(): string {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `#GE-${num}`;
 }
 
 export function useSubmitRedeemRequest() {
@@ -97,29 +90,39 @@ export function useSubmitRedeemRequest() {
       rewardType: string;
       userName: string;
       userEmail: string;
-    }) => {
+    }): Promise<string> => {
       if (demo) {
-        // Save locally for demo user's own order history
         const result = demoSubmitRedeem(Number(amount), rewardType);
         if (!result.success) throw new Error(result.message);
-        // Also submit to backend (best-effort) so admin panel can see it
-        // Ignore backend errors (cooldown etc.) - demo UX always succeeds
+        const code = result.redeemCode!;
+        // Save to backend so admin panel sees it and status can be updated
         if (actor) {
-          try {
-            await actor.submitRedeemRequest(
+          await actor
+            .logRedeemRecord(
+              code,
               amount,
               rewardType,
-              "Demo User",
-              "demo@gamerearn.com",
+              userName || "Demo User",
+              userEmail || "demo@gamerearn.com",
+            )
+            .catch((e: unknown) =>
+              console.warn("Backend log failed (demo):", e),
             );
-          } catch {
-            // silently ignore backend errors for demo account
-          }
         }
-        return result;
+        return code;
       }
-      if (!actor) throw new Error("Not connected");
-      return actor.submitRedeemRequest(amount, rewardType, userName, userEmail);
+
+      // Non-demo users: use logRedeemRecord directly.
+      const code = generateRedeemCode();
+      if (!actor) throw new Error("Not connected to backend");
+      await actor.logRedeemRecord(
+        code,
+        amount,
+        rewardType,
+        userName || "User",
+        userEmail || "",
+      );
+      return code;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
@@ -131,15 +134,22 @@ export function useSubmitRedeemRequest() {
 
 export function useUserRedeemHistory() {
   const { actor, isFetching } = useActor();
-  const demo = isDemoLoggedIn();
   return useQuery<RedeemRequest[]>({
     queryKey: ["redeemHistory"],
     queryFn: async () => {
-      if (demo) return makeDemoOrders();
+      // Always fetch from backend and filter by email so that admin
+      // approve/reject status is always up-to-date.
       if (!actor) return [];
-      return actor.getUserRedeemHistory();
+      const email = getLoggedInEmail();
+      if (!email) return [];
+      const all = await actor.getAllRedeemRequests();
+      return all.filter(
+        (r) => r.userEmail.toLowerCase() === email.toLowerCase(),
+      );
     },
-    enabled: demo || (!!actor && !isFetching),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchInterval: 15_000, // auto-refresh every 15s so status updates appear
   });
 }
 
@@ -153,7 +163,7 @@ export function useAllRedeemRequests() {
     },
     enabled: !!actor && !isFetching,
     refetchOnMount: true,
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
   });
 }
 
@@ -166,6 +176,7 @@ export function useApproveRedeemRequest() {
       return actor.approveRedeemRequest(requestId);
     },
     onSuccess: () => {
+      // Invalidate both admin list AND user order history so status updates everywhere
       queryClient.invalidateQueries({ queryKey: ["allRedeemRequests"] });
       queryClient.invalidateQueries({ queryKey: ["redeemHistory"] });
     },
@@ -181,13 +192,13 @@ export function useRejectRedeemRequest() {
       return actor.rejectRedeemRequest(requestId);
     },
     onSuccess: () => {
+      // Invalidate both admin list AND user order history so status updates everywhere
       queryClient.invalidateQueries({ queryKey: ["allRedeemRequests"] });
       queryClient.invalidateQueries({ queryKey: ["redeemHistory"] });
     },
   });
 }
 
-// Notice hooks
 export function useAllNotices() {
   const { actor, isFetching } = useActor();
   const demo = isDemoLoggedIn();
@@ -199,8 +210,7 @@ export function useAllNotices() {
       return actor.getAllNotices();
     },
     enabled: demo || (!!actor && !isFetching),
-    refetchInterval: 60_000,
-    refetchOnMount: true,
+    refetchInterval: 5_000,
   });
 }
 
@@ -211,7 +221,10 @@ export function usePostNotice() {
     mutationFn: async ({
       title,
       message,
-    }: { title: string; message: string }) => {
+    }: {
+      title: string;
+      message: string;
+    }) => {
       if (!actor) throw new Error("Not connected");
       return actor.postNotice(title, message);
     },
@@ -229,7 +242,11 @@ export function useEditNotice() {
       id,
       title,
       message,
-    }: { id: bigint; title: string; message: string }) => {
+    }: {
+      id: bigint;
+      title: string;
+      message: string;
+    }) => {
       if (!actor) throw new Error("Not connected");
       return actor.editNotice(id, title, message);
     },
@@ -250,5 +267,18 @@ export function useDeleteNotice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notices"] });
     },
+  });
+}
+
+export function useTotalUserCount() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["totalUserCount"],
+    queryFn: async () => {
+      if (!actor) return BigInt(0);
+      return actor.getTotalUserCount();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 5_000,
   });
 }

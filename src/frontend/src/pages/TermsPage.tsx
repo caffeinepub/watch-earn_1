@@ -15,12 +15,12 @@ const sections = [
   {
     title: "3. Redemption Rules",
     content:
-      "The minimum redemption amount is ₹50 (5,000 coins). The maximum redemption amount is ₹250 per transaction. Each user is limited to one (1) redemption per 24 hours. Coins are deducted immediately upon submitting a redeem request. Rewards are processed within 24–72 hours after admin approval and sent via email.",
+      "The minimum redemption amount is ₹50 (5,000 coins). The maximum redemption amount is ₹250 per transaction. Each user is limited to one (1) redemption per 24 hours. Coins are deducted immediately upon submitting a redeem request. Rewards are processed within 3–7 business days after admin approval and sent via email.",
   },
   {
     title: "4. Reward Delivery",
     content:
-      "Rewards are delivered to the email address provided during redemption. Delivery typically occurs within 24–72 hours after admin approval. Gamer Earn is not responsible for delays caused by third-party email services, incorrect email addresses, or spam filters. Ensure your email address is correct before submitting a redeem request.",
+      "Rewards are delivered to the email address provided during redemption. Delivery typically occurs within 3–7 business days after admin approval. Gamer Earn is not responsible for delays caused by third-party email services, incorrect email addresses, or spam filters. Ensure your email address is correct before submitting a redeem request.",
   },
   {
     title: "5. Prohibited Actions",
@@ -156,18 +156,10 @@ export function TermsPage({ onBack }: { onBack: () => void }) {
       </main>
 
       <footer className="py-4 text-center flex flex-col items-center gap-1">
-        <p className="text-muted-foreground/40 text-xs">
-          © {new Date().getFullYear()}. Built with ❤️ using{" "}
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-muted-foreground/60 transition-colors"
-          >
-            caffeine.ai
-          </a>
-        </p>
         <p className="text-muted-foreground/30 text-xs">
+          ©{new Date().getFullYear()} Gamer Earn — Built with Passion 🎮
+        </p>
+        <p className="text-muted-foreground/40 text-xs">
           Created and maintained by Tanmoy Saha
         </p>
       </footer>

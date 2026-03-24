@@ -6,7 +6,6 @@ const credits = [
   { icon: "🎮", role: "Creator & Developer", name: "Tanmoy Saha" },
   { icon: "🛠️", role: "Maintained by", name: "Tanmoy Saha" },
   { icon: "🎨", role: "UI/UX Design", name: "Tanmoy Saha" },
-  { icon: "🤖", role: "Development & AI Support", name: "Caffeine AI" },
 ];
 
 export function CreditsPage() {
@@ -59,11 +58,7 @@ export function CreditsPage() {
               <p className="text-xs text-muted-foreground">{item.role}</p>
               <p
                 className="text-sm font-bold"
-                style={
-                  item.name === "Caffeine AI"
-                    ? { color: "oklch(0.75 0.12 250)" }
-                    : { color: "oklch(0.83 0.16 87)" }
-                }
+                style={{ color: "oklch(0.83 0.16 87)" }}
               >
                 {item.name}
               </p>

@@ -195,6 +195,10 @@ export interface backendInterface {
      * / Submit a redeem request
      */
     submitRedeemRequest(amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
+    /**
+     * / Log a redeem entry without coin checks (for demo)
+     */
+    logRedeemRecord(code: string, amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
 }
 import type { Notice as _Notice, RedeemRequest as _RedeemRequest, RedeemStatus as _RedeemStatus, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -476,6 +480,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.submitRedeemRequest(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async logRedeemRecord(arg0: string, arg1: bigint, arg2: string, arg3: string, arg4: string): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.logRedeemRecord(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.logRedeemRecord(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }

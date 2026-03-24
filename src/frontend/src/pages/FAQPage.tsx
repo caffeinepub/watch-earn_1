@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "Redeem kaise karein?",
-    a: "Redeem tab pe jaao, reward type chunno (Google Play ya Amazon Pay), amount choose karo, aur 'Redeem Now' button dabao. Aapka request admin ke paas jayega aur 24-72 ghante mein aapki email pe reward aayega.",
+    a: "Redeem tab pe jaao, reward type chunno (Google Play ya Amazon Pay), amount choose karo, aur 'Redeem Now' button dabao. Aapka request admin ke paas jayega aur 3-7 din mein aapki email pe reward aayega.",
   },
   {
     q: "Minimum redeem amount kitna hai?",
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     q: "Reward kitne time mein milta hai?",
-    a: "Redeem request submit karne ke baad 24-72 ghante mein aapki registered email pe reward code bheja jaata hai. Weekends pe thoda zyada time lag sakta hai.",
+    a: "Redeem request submit karne ke baad 3-7 din mein aapki registered email pe reward code bheja jaata hai. Weekends pe thoda zyada time lag sakta hai.",
   },
   {
     q: "Kya har bar redeem kar sakte hain?",
@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     q: "Meri email par reward nahi aaya, kya karein?",
-    a: "Pehle apna spam/junk folder check karo. Agar 72 ghante ke baad bhi nahi mila to gmrearn@gmail.com pe contact karo apna redeem code lekar.",
+    a: "Pehle apna spam/junk folder check karo. Agar 7 din ke baad bhi nahi mila to gmrearn@gmail.com pe contact karo apna redeem code lekar.",
   },
   {
     q: "Account kaise banayein?",

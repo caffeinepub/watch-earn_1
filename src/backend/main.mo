@@ -259,7 +259,26 @@ actor {
     redeemRequests.values().toArray().sort();
   };
 
-  /// Get total user count
+  /// Log a redeem entry without coin checks (for demo account submissions)
+  public shared func logRedeemRecord(code : Text, amount : Nat, rewardType : Text, userName : Text, userEmail : Text) : async Text {
+    let requestId = nextRedeemRequestId;
+    nextRedeemRequestId += 1;
+    redeemRequests.add(requestId, {
+      id = requestId;
+      userId = Principal.fromText("2vxsx-fae");
+      code;
+      status = #pending;
+      amount;
+      rewardType;
+      userName;
+      userEmail;
+      coins = amount * 100;
+      timestamp = Time.now();
+    });
+    code;
+  };
+
+    /// Get total user count
   public query func getTotalUserCount() : async Nat {
     userProfiles.size();
   };
