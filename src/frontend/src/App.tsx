@@ -9,6 +9,7 @@ import { LoginScreen } from "./components/LoginScreen";
 import { NotificationsPanel } from "./components/NotificationsPanel";
 import { OrderHistory } from "./components/OrderHistory";
 import { RedeemScreen } from "./components/RedeemScreen";
+import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useAllNotices, useUserProfile } from "./hooks/useQueries";
 import { AdminPage } from "./pages/AdminPage";
@@ -42,6 +43,7 @@ function AppShell({
   onDemoLogout: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("earn");
+  useActor(); // Initialize actor early so backendService can use it everywhere
   const { clear, identity, isInitializing } = useInternetIdentity();
   const { data: profile } = useUserProfile();
   const { data: notices = [] } = useAllNotices();

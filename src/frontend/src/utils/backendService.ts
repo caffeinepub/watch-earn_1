@@ -2,13 +2,27 @@ import type { Notice, RedeemRequest, backendInterface } from "../backend.d";
 /**
  * backendService.ts
  * Singleton backend actor — initialized once, reused everywhere.
- * Eliminates the race condition where queries run before the actor is ready.
+ * External actors set via setSharedActor() take priority (set by useActor hook).
  */
 import { createActorWithConfig } from "../config";
 
+let sharedActor: backendInterface | null = null;
 let actorPromise: Promise<backendInterface> | null = null;
 
+/** Called by useActor() once it has a ready actor — this takes priority */
+export function setSharedActor(actor: backendInterface) {
+  sharedActor = actor;
+  actorPromise = Promise.resolve(actor);
+}
+
+/** Reset the singleton (used after network errors) */
+export function resetActor() {
+  sharedActor = null;
+  actorPromise = null;
+}
+
 function getActor(): Promise<backendInterface> {
+  if (sharedActor) return Promise.resolve(sharedActor);
   if (!actorPromise) {
     actorPromise = createActorWithConfig().catch((err) => {
       // Reset so next call retries
@@ -17,11 +31,6 @@ function getActor(): Promise<backendInterface> {
     });
   }
   return actorPromise;
-}
-
-/** Reset the singleton (used after network errors) */
-export function resetActor() {
-  actorPromise = null;
 }
 
 // ─── Redeem ───────────────────────────────────────────────────────────────────

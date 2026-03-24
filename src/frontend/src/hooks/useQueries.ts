@@ -10,7 +10,6 @@ import {
   getDemoProfile,
   isDemoLoggedIn,
 } from "../utils/demoMode";
-import { useActor } from "./useActor";
 
 export { RedeemStatus };
 
@@ -98,7 +97,7 @@ export function useSubmitRedeemRequest() {
         const result = demoSubmitRedeem(Number(amount), rewardType, code);
         if (!result.success) throw new Error(result.message);
 
-        // Also log to backend for admin panel visibility (best effort)
+        // Also log to backend for admin panel visibility (fire and forget)
         backend
           .logRedeemRecord(
             code,
@@ -108,7 +107,7 @@ export function useSubmitRedeemRequest() {
             "demo@gamerearn.com",
           )
           .catch(() => {
-            // Silently ignore — order history reads from localStorage anyway
+            // Silently ignore - order history works via localStorage
           });
 
         return code;
@@ -148,7 +147,6 @@ export function useUserRedeemHistory() {
           (o) =>
             ({
               id: BigInt(o.id),
-              // userId not needed for display
               userId: {} as RedeemRequest["userId"],
               code: o.redeemCode,
               status: o.status as unknown as RedeemStatus,
@@ -185,7 +183,7 @@ export function useAllRedeemRequests() {
     enabled: true,
     staleTime: 0,
     refetchOnMount: true,
-    refetchInterval: 5_000,
+    // Auto-refresh disabled — use manual refresh button
   });
 }
 
@@ -222,7 +220,7 @@ export function useAllNotices() {
     enabled: true,
     staleTime: 0,
     refetchOnMount: true,
-    refetchInterval: 5_000,
+    refetchInterval: 30_000, // 30s for users to see new notices
   });
 }
 
@@ -268,11 +266,12 @@ export function useDeleteNotice() {
 // ─── Stats ─────────────────────────────────────────────────────────────────────
 
 export function useTotalUserCount() {
-  useActor();
   return useQuery({
     queryKey: ["totalUserCount"],
     queryFn: () => backend.getTotalUserCount(),
     enabled: true,
-    refetchInterval: 5_000,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchInterval: 30_000,
   });
 }

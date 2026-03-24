@@ -383,7 +383,6 @@ function StatCard({
 }
 
 function NoticesSection() {
-  const { actor } = useActor();
   const { data: notices = [], isLoading } = useAllNotices();
   const postMutation = usePostNotice();
   const editMutation = useEditNotice();
@@ -400,33 +399,19 @@ function NoticesSection() {
       toast.error("Title and message are required");
       return;
     }
-    const doPost = (retryActor: typeof actor) => {
-      if (!retryActor) {
-        toast.error(
-          "Backend not connected. Please wait a moment and try again.",
-        );
-        return;
-      }
-      postMutation.mutate(
-        { title: title.trim(), message: message.trim() },
-        {
-          onSuccess: () => {
-            setTitle("");
-            setMessage("");
-            toast.success("Notice published successfully!");
-          },
-          onError: (_err) => {
-            toast.error("Failed to publish notice. Please try again.");
-          },
+    postMutation.mutate(
+      { title: title.trim(), message: message.trim() },
+      {
+        onSuccess: () => {
+          setTitle("");
+          setMessage("");
+          toast.success("Notice published successfully!");
         },
-      );
-    };
-    if (!actor) {
-      // Retry once after a short delay
-      setTimeout(() => doPost(actor), 1000);
-    } else {
-      doPost(actor);
-    }
+        onError: (_err) => {
+          toast.error("Failed to publish notice. Please try again.");
+        },
+      },
+    );
   };
 
   const startEdit = (id: bigint, t: string, m: string) => {
@@ -810,6 +795,7 @@ function LiveClock() {
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("requests");
+  useActor(); // Initialize actor so backendService uses the same instance
   const {
     data: requests,
     isLoading,
