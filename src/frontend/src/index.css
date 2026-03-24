@@ -179,3 +179,197 @@
     }
   }
 }
+
+/* Redeem slider thumb styling */
+.redeem-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, oklch(0.88 0.17 90), oklch(0.8 0.16 82));
+  border: 2px solid oklch(0.14 0.005 255);
+  box-shadow: 0 0 12px oklch(0.83 0.16 87 / 60%), 0 2px 8px oklch(0 0 0 / 40%);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.redeem-slider::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+.redeem-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, oklch(0.88 0.17 90), oklch(0.8 0.16 82));
+  border: 2px solid oklch(0.14 0.005 255);
+  box-shadow: 0 0 12px oklch(0.83 0.16 87 / 60%);
+  cursor: pointer;
+}
+
+/* Shimmer sweep on button */
+.shimmer-sweep {
+  animation: shimmerSweep 2.5s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Confetti particles for congrats dialog */
+.confetti-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  top: -10px;
+  animation: confettiFall 2.5s ease-in forwards;
+  opacity: 0;
+}
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(280px) rotate(540deg) scale(0.5);
+  }
+}
+
+/* ===== Earn Screen Premium Styles ===== */
+
+/* Floating particles background */
+.earn-particles-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.earn-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: oklch(0.83 0.16 87 / 40%);
+  box-shadow: 0 0 6px oklch(0.83 0.16 87 / 60%);
+  animation: earnParticleFloat linear infinite;
+}
+
+@keyframes earnParticleFloat {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-60px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Hex grid overlay on coin balance card */
+.earn-hex-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: repeating-linear-gradient(
+      60deg,
+      oklch(0.83 0.16 87) 0,
+      oklch(0.83 0.16 87) 1px,
+      transparent 0,
+      transparent 50%
+    ),
+    repeating-linear-gradient(
+      -60deg,
+      oklch(0.83 0.16 87) 0,
+      oklch(0.83 0.16 87) 1px,
+      transparent 0,
+      transparent 50%
+    );
+  background-size: 30px 52px;
+  pointer-events: none;
+}
+
+/* Pulsing rings around coin orb */
+.earn-coin-ring-outer {
+  position: absolute;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 2px solid oklch(0.83 0.16 87 / 20%);
+  animation: earnRingPulse 2s ease-in-out infinite;
+}
+
+.earn-coin-ring-inner {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 1.5px solid oklch(0.83 0.16 87 / 35%);
+  animation: earnRingPulse 2s ease-in-out infinite 0.4s;
+}
+
+@keyframes earnRingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 oklch(0.83 0.16 87 / 0%);
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    box-shadow: 0 0 20px 4px oklch(0.83 0.16 87 / 20%);
+  }
+}
+
+/* Button glow pulse */
+.earn-btn-glow {
+  animation: earnBtnGlow 2s ease-in-out infinite;
+}
+
+@keyframes earnBtnGlow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleY(0.8);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scaleY(1);
+  }
+}
+
+/* Button shimmer sweep */
+.earn-btn-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    oklch(1 0 0 / 20%) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: earnBtnShimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes earnBtnShimmer {
+  0% {
+    background-position: -100% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}

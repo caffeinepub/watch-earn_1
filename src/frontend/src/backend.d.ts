@@ -28,6 +28,12 @@ export interface UserProfile {
     nextAllowedAdTime: bigint;
     fastClickDisabledUntil: bigint;
 }
+export interface Notice {
+    id: bigint;
+    title: string;
+    message: string;
+    timestamp: bigint;
+}
 export enum RedeemStatus {
     pending = "pending",
     approved = "approved",
@@ -39,51 +45,22 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    /**
-     * / Admin: Manual coin adjustment for user
-     */
     adjustUserCoins(user: Principal, coins: bigint): Promise<UserProfile>;
-    /**
-     * / Approve a redeem request (admin only)
-     */
     approveRedeemRequest(requestId: bigint): Promise<RedeemRequest | null>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    /**
-     * / Earn coins by watching an ad - with cooldown checks
-     */
     earnCoins(): Promise<UserProfile>;
-    /**
-     * / Get all redeem requests (admin only)
-     */
     getAllRedeemRequests(): Promise<Array<RedeemRequest>>;
-    /**
-     * / Admin: Get all user profiles (admin only)
-     */
     getAllUserProfiles(): Promise<Array<UserProfile>>;
-    /**
-     * / Returns the current user's profile, creating it if it doesn't exist
-     */
     getCallerUserProfile(): Promise<UserProfile>;
     getCallerUserRole(): Promise<UserRole>;
-    /**
-     * / Utility: Get current date (YYYY-MM-DD)
-     */
     getCurrentDateTimestamp(): Promise<bigint>;
-    /**
-     * / Admin: Get user profile by Principal (admin only)
-     */
     getUserProfile(user: Principal): Promise<UserProfile>;
-    /**
-     * / Get user's redeem history
-     */
     getUserRedeemHistory(): Promise<Array<RedeemRequest>>;
     isCallerAdmin(): Promise<boolean>;
-    /**
-     * / Reject a redeem request (admin only)
-     */
     rejectRedeemRequest(requestId: bigint): Promise<RedeemRequest | null>;
-    /**
-     * / Submit a redeem request for coins
-     */
     submitRedeemRequest(amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
+    getAllNotices(): Promise<Array<Notice>>;
+    postNotice(title: string, message: string): Promise<Notice>;
+    editNotice(id: bigint, title: string, message: string): Promise<Notice | null>;
+    deleteNotice(id: bigint): Promise<boolean>;
 }

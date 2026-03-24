@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { RedeemRequest, UserProfile } from "../backend.d";
+import type { Notice, RedeemRequest, UserProfile } from "../backend.d";
 import { useActor } from "./useActor";
 
 export function useUserProfile() {
@@ -104,6 +104,69 @@ export function useRejectRedeemRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allRedeemRequests"] });
       queryClient.invalidateQueries({ queryKey: ["redeemHistory"] });
+    },
+  });
+}
+
+// Notice hooks
+export function useAllNotices() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Notice[]>({
+    queryKey: ["notices"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllNotices();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 60_000,
+  });
+}
+
+export function usePostNotice() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      title,
+      message,
+    }: { title: string; message: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.postNotice(title, message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
+    },
+  });
+}
+
+export function useEditNotice() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      title,
+      message,
+    }: { id: bigint; title: string; message: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.editNotice(id, title, message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
+    },
+  });
+}
+
+export function useDeleteNotice() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.deleteNotice(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
     },
   });
 }

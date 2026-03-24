@@ -35,6 +35,16 @@ export function IMARewardedAd({
   );
   const rewardedRef = useRef(false);
 
+  // Store callbacks in refs to avoid re-initializing ads on parent re-renders
+  const onRewardedRef = useRef(onRewarded);
+  const onCloseRef = useRef(onClose);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onRewardedRef.current = onRewarded;
+    onCloseRef.current = onClose;
+    onErrorRef.current = onError;
+  });
+
   useEffect(() => {
     let adsLoader: any = null;
     let adsManager: any = null;
@@ -81,25 +91,25 @@ export function IMARewardedAd({
               () => {
                 if (!rewardedRef.current) {
                   rewardedRef.current = true;
-                  onRewarded();
+                  onRewardedRef.current();
                 }
-                onClose();
+                onCloseRef.current();
               },
             );
 
             adsManager.addEventListener(ima.AdEvent.Type.SKIPPED, () => {
-              onClose();
+              onCloseRef.current();
             });
 
             adsManager.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, () => {
-              onError?.();
-              onClose();
+              onErrorRef.current?.();
+              onCloseRef.current();
             });
 
             adsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => {
               if (!rewardedRef.current) {
                 rewardedRef.current = true;
-                onRewarded();
+                onRewardedRef.current();
               }
             });
 
@@ -112,8 +122,8 @@ export function IMARewardedAd({
               adsManager.start();
               setStatus("playing");
             } catch (_e) {
-              onError?.();
-              onClose();
+              onErrorRef.current?.();
+              onCloseRef.current();
             }
           },
         );
@@ -121,8 +131,8 @@ export function IMARewardedAd({
         adsLoader.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, () => {
           setStatus("error");
           setTimeout(() => {
-            onError?.();
-            onClose();
+            onErrorRef.current?.();
+            onCloseRef.current();
           }, 2000);
         });
 
@@ -136,8 +146,8 @@ export function IMARewardedAd({
       } catch (_e) {
         setStatus("error");
         setTimeout(() => {
-          onError?.();
-          onClose();
+          onErrorRef.current?.();
+          onCloseRef.current();
         }, 2000);
       }
     }
@@ -148,7 +158,7 @@ export function IMARewardedAd({
       adsManager?.destroy();
       adsLoader?.contentComplete();
     };
-  }, [onRewarded, onClose, onError]);
+  }, []); // Empty deps - callbacks accessed via refs to prevent ad re-initialization
 
   return (
     <div

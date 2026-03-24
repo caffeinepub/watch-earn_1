@@ -110,6 +110,12 @@ export interface UserProfile {
     nextAllowedAdTime: bigint;
     fastClickDisabledUntil: bigint;
 }
+export interface Notice {
+    id: bigint;
+    title: string;
+    message: string;
+    timestamp: bigint;
+}
 export enum RedeemStatus {
     pending = "pending",
     approved = "approved",
@@ -169,6 +175,10 @@ export interface backendInterface {
      * / Submit a redeem request for coins
      */
     submitRedeemRequest(amount: bigint, rewardType: string, userName: string, userEmail: string): Promise<string>;
+    getAllNotices(): Promise<Array<Notice>>;
+    postNotice(title: string, message: string): Promise<Notice>;
+    editNotice(id: bigint, title: string, message: string): Promise<Notice | null>;
+    deleteNotice(id: bigint): Promise<boolean>;
 }
 import type { RedeemRequest as _RedeemRequest, RedeemStatus as _RedeemStatus, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -382,6 +392,21 @@ export class Backend implements backendInterface {
             const result = await this.actor.submitRedeemRequest(arg0, arg1, arg2, arg3);
             return result;
         }
+    }
+    async getAllNotices(): Promise<Array<Notice>> {
+        const result = await this.actor.getAllNotices();
+        return result as any;
+    }
+    async postNotice(arg0: string, arg1: string): Promise<Notice> {
+        const result = await this.actor.postNotice(arg0, arg1);
+        return result as any;
+    }
+    async editNotice(arg0: bigint, arg1: string, arg2: string): Promise<Notice | null> {
+        const result = await this.actor.editNotice(arg0, arg1, arg2);
+        return result.length === 0 ? null : result[0] as any;
+    }
+    async deleteNotice(arg0: bigint): Promise<boolean> {
+        return await this.actor.deleteNotice(arg0);
     }
 }
 function from_candid_RedeemRequest_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RedeemRequest): RedeemRequest {

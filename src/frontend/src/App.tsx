@@ -3,23 +3,29 @@ import { Toaster } from "@/components/ui/sonner";
 import { Clock, Gamepad2, Gift, LogOut, Star } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { AdSlot } from "./components/AdSlot";
 import { EarnScreen } from "./components/EarnScreen";
 import { LoginScreen } from "./components/LoginScreen";
+import { NotificationsPanel } from "./components/NotificationsPanel";
 import { OrderHistory } from "./components/OrderHistory";
 import { RedeemScreen } from "./components/RedeemScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import { useUserProfile } from "./hooks/useQueries";
+import { useAllNotices, useUserProfile } from "./hooks/useQueries";
 import { AdminPage } from "./pages/AdminPage";
 import { CreditsPage } from "./pages/CreditsPage";
+import { FAQPage } from "./pages/FAQPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 import { TermsPage } from "./pages/TermsPage";
 
 type Tab = "earn" | "redeem" | "orders" | "credits";
-type Page = "app" | "admin" | "terms";
+type Page = "app" | "admin" | "terms" | "faq" | "privacy";
 
 function getInitialPage(): Page {
   const path = window.location.pathname;
   if (path.startsWith("/admin")) return "admin";
   if (path.startsWith("/terms")) return "terms";
+  if (path.startsWith("/faq")) return "faq";
+  if (path.startsWith("/privacy")) return "privacy";
   return "app";
 }
 
@@ -27,6 +33,7 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
   const [activeTab, setActiveTab] = useState<Tab>("earn");
   const { clear, identity, isInitializing } = useInternetIdentity();
   const { data: profile } = useUserProfile();
+  const { data: notices = [] } = useAllNotices();
   const coins = profile ? Number(profile.coins) : 0;
 
   if (isInitializing) {
@@ -78,13 +85,15 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
               Gamer Earn
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="inner-panel rounded-full px-3 py-1.5 flex items-center gap-1.5">
               <Gamepad2 className="w-3.5 h-3.5 gold-text" />
               <span className="text-xs font-bold gold-text">
                 {coins.toLocaleString()}
               </span>
             </div>
+            {/* Bell icon with notification dot */}
+            <NotificationsPanel notices={notices} />
             <Button
               data-ocid="nav.secondary_button"
               onClick={clear}
@@ -128,6 +137,12 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
           ))}
         </div>
       </nav>
+
+      {/* AdSense: Replace data-ad-client with your Publisher ID */}
+      {/* Ad Banner — below tab navigation */}
+      <div className="max-w-md mx-auto w-full px-4 py-2">
+        <AdSlot size="banner" />
+      </div>
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
@@ -181,16 +196,42 @@ function AppShell({ onNavigate }: { onNavigate: (page: Page) => void }) {
         </div>
       </main>
 
+      {/* AdSense: Replace data-ad-client with your Publisher ID */}
+      {/* Ad Banner — above footer */}
+      <div className="max-w-md mx-auto w-full px-4 py-3">
+        <AdSlot size="banner" />
+      </div>
+
       {/* Footer */}
       <footer className="py-4 text-center flex flex-col items-center gap-1">
-        <button
-          type="button"
-          data-ocid="nav.terms.link"
-          onClick={() => onNavigate("terms")}
-          className="text-muted-foreground/50 text-xs hover:text-muted-foreground/70 transition-colors underline underline-offset-2"
-        >
-          Terms & Conditions
-        </button>
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          <button
+            type="button"
+            data-ocid="nav.terms.link"
+            onClick={() => onNavigate("terms")}
+            className="text-muted-foreground/50 text-xs hover:text-muted-foreground/70 transition-colors underline underline-offset-2"
+          >
+            Terms & Conditions
+          </button>
+          <span className="text-muted-foreground/30 text-xs">|</span>
+          <button
+            type="button"
+            data-ocid="nav.faq.link"
+            onClick={() => onNavigate("faq")}
+            className="text-muted-foreground/50 text-xs hover:text-muted-foreground/70 transition-colors underline underline-offset-2"
+          >
+            FAQ
+          </button>
+          <span className="text-muted-foreground/30 text-xs">|</span>
+          <button
+            type="button"
+            data-ocid="nav.privacy.link"
+            onClick={() => onNavigate("privacy")}
+            className="text-muted-foreground/50 text-xs hover:text-muted-foreground/70 transition-colors underline underline-offset-2"
+          >
+            Privacy Policy
+          </button>
+        </div>
         <p className="text-muted-foreground/40 text-xs">
           © {new Date().getFullYear()}. Built with ❤️ using{" "}
           <a
@@ -234,6 +275,24 @@ export default function App() {
     return (
       <>
         <TermsPage onBack={() => navigate("app")} />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (page === "faq") {
+    return (
+      <>
+        <FAQPage onBack={() => navigate("app")} />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (page === "privacy") {
+    return (
+      <>
+        <PrivacyPolicyPage onBack={() => navigate("app")} />
         <Toaster />
       </>
     );

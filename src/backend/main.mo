@@ -52,6 +52,19 @@ actor {
     };
   };
 
+  type Notice = {
+    id : Nat;
+    title : Text;
+    message : Text;
+    timestamp : Int;
+  };
+
+  module Notice {
+    public func compare(x : Notice, y : Notice) : { #less; #equal; #greater } {
+      Int.compare(y.timestamp, x.timestamp);
+    };
+  };
+
   let dailyLimit = 15;
   let coinsPerAd = 10;
   let minRedeemCoins = 5000;
@@ -61,12 +74,16 @@ actor {
   let redeemRequests = Map.empty<Nat, RedeemRequest>();
   var nextRedeemRequestId = 1;
 
+  let notices = Map.empty<Nat, Notice>();
+  var nextNoticeId = 1;
+
   func getCurrentDate() : Int {
     Time.now() / 86_400_000_000_000;
   };
 
   func generateCode(id : Nat) : Text {
-    let raw = (Time.now() % 9000).toNat() + 1000 + id;
+    let nowNat : Nat = Int.abs(Time.now());
+    let raw = (nowNat % 9000) + 1000 + id;
     let num = raw % 10000;
     let padded = if (num < 1000) { "0" # num.toText() } else { num.toText() };
     "#GE-" # padded;
@@ -268,6 +285,52 @@ actor {
       Runtime.trap("Unauthorized");
     };
     userProfiles.values().toArray().sort();
+  };
+
+  /// Get all notices (public - any user can read)
+  public query func getAllNotices() : async [Notice] {
+    notices.values().toArray().sort();
+  };
+
+  /// Admin: Post a new notice
+  public shared ({ caller }) func postNotice(title : Text, message : Text) : async Notice {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized");
+    };
+    let id = nextNoticeId;
+    nextNoticeId += 1;
+    let notice = { id; title; message; timestamp = Time.now() };
+    notices.add(id, notice);
+    notice;
+  };
+
+  /// Admin: Edit a notice
+  public shared ({ caller }) func editNotice(id : Nat, title : Text, message : Text) : async ?Notice {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized");
+    };
+    switch (notices.get(id)) {
+      case (null) { null };
+      case (?n) {
+        let updated = { n with title; message };
+        notices.add(id, updated);
+        ?updated;
+      };
+    };
+  };
+
+  /// Admin: Delete a notice
+  public shared ({ caller }) func deleteNotice(id : Nat) : async Bool {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized");
+    };
+    switch (notices.get(id)) {
+      case (null) { false };
+      case (?_) {
+        ignore notices.remove(id);
+        true;
+      };
+    };
   };
 
   /// Utility: Get current date timestamp
