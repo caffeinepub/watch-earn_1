@@ -15,32 +15,34 @@ export function useActor() {
     queryFn: async () => {
       const isAuthenticated = !!identity;
 
-      let actor: backendInterface;
       if (!isAuthenticated) {
-        actor = await createActorWithConfig();
-      } else {
-        const actorOptions = {
-          agentOptions: {
-            identity,
-          },
-        };
-        actor = await createActorWithConfig(actorOptions);
-        const adminToken = getSecretParameter("caffeineAdminToken") || "";
-        await actor._initializeAccessControlWithSecret(adminToken);
+        // Return anonymous actor if not authenticated
+        const actor = await createActorWithConfig();
+        setSharedActor(actor);
+        return actor;
       }
 
-      // Share this actor with backendService so all backend calls use the same instance
+      const actorOptions = {
+        agentOptions: {
+          identity,
+        },
+      };
+
+      const actor = await createActorWithConfig(actorOptions);
+      const adminToken = getSecretParameter("caffeineAdminToken") || "";
+      await actor._initializeAccessControlWithSecret(adminToken);
       setSharedActor(actor);
       return actor;
     },
+    // Only refetch when identity changes
     staleTime: Number.POSITIVE_INFINITY,
+    // This will cause the actor to be recreated when the identity changes
     enabled: true,
   });
 
-  // When the actor changes, share it immediately and invalidate dependent queries
+  // When the actor changes, share it with backendService and invalidate dependent queries
   useEffect(() => {
     if (actorQuery.data) {
-      // Ensure backendService always has the latest actor
       setSharedActor(actorQuery.data);
       queryClient.invalidateQueries({
         predicate: (query) => {
