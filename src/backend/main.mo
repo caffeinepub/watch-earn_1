@@ -68,17 +68,20 @@ actor {
   let coinsPerAd = 10;
   let minRedeemCoins = 5000;
   let redeemCooldownNs : Int = 86_400_000_000_000;
+  let deleteAfterNs : Int = 86_400_000_000_000; // 24 hours
 
   // Stable storage for persistence across upgrades
   stable var userProfileEntries : [(Principal, UserProfile)] = [];
   stable var redeemRequestEntries : [(Nat, RedeemRequest)] = [];
   stable var noticeEntries : [(Nat, Notice)] = [];
+  stable var resolvedAtEntries : [(Nat, Int)] = []; // tracks when a request was approved/rejected
   stable var nextRedeemRequestId : Nat = 1;
   stable var nextNoticeId : Nat = 1;
 
   let userProfiles = Map.empty<Principal, UserProfile>();
   let redeemRequests = Map.empty<Nat, RedeemRequest>();
   let notices = Map.empty<Nat, Notice>();
+  let resolvedAt = Map.empty<Nat, Int>(); // requestId -> resolution timestamp
 
   // Restore data from stable storage after upgrade
   system func postupgrade() {
@@ -91,9 +94,13 @@ actor {
     for ((k, v) in noticeEntries.vals()) {
       notices.add(k, v);
     };
+    for ((k, v) in resolvedAtEntries.vals()) {
+      resolvedAt.add(k, v);
+    };
     userProfileEntries := [];
     redeemRequestEntries := [];
     noticeEntries := [];
+    resolvedAtEntries := [];
   };
 
   // Save data to stable storage before upgrade
@@ -101,6 +108,18 @@ actor {
     userProfileEntries := userProfiles.entries().toArray();
     redeemRequestEntries := redeemRequests.entries().toArray();
     noticeEntries := notices.entries().toArray();
+    resolvedAtEntries := resolvedAt.entries().toArray();
+  };
+
+  // Remove approved/rejected requests that are older than 24 hours
+  func cleanupResolvedRequests() {
+    let now = Time.now();
+    for ((id, resolveTime) in resolvedAt.entries()) {
+      if (now - resolveTime >= deleteAfterNs) {
+        redeemRequests.remove(id);
+        resolvedAt.remove(id);
+      };
+    };
   };
 
   func getCurrentDate() : Int {
@@ -230,6 +249,8 @@ actor {
       case (?request) {
         let updated = { request with status = #approved };
         redeemRequests.add(requestId, updated);
+        // Record approval time - request will be auto-deleted 24 hours later
+        resolvedAt.add(requestId, Time.now());
         ?updated;
       };
     };
@@ -242,20 +263,23 @@ actor {
       case (?request) {
         let updated = { request with status = #rejected };
         redeemRequests.add(requestId, updated);
+        // Record rejection time - request will be auto-deleted 24 hours later
+        resolvedAt.add(requestId, Time.now());
         ?updated;
       };
     };
   };
 
-  /// Get user's own redeem history
+  /// Get user's own redeem history - only pending + recently resolved (< 24h)
   public query ({ caller }) func getUserRedeemHistory() : async [RedeemRequest] {
     redeemRequests.values().toArray()
       .filter(func(req : RedeemRequest) : Bool { req.userId == caller })
       .sort();
   };
 
-  /// Get all redeem requests (admin)
-  public query func getAllRedeemRequests() : async [RedeemRequest] {
+  /// Get all redeem requests (admin) - auto-cleans up resolved requests older than 24h
+  public shared func getAllRedeemRequests() : async [RedeemRequest] {
+    cleanupResolvedRequests();
     redeemRequests.values().toArray().sort();
   };
 

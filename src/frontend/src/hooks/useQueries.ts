@@ -69,12 +69,6 @@ export function useEarnCoins() {
   });
 }
 
-// Generate a unique redeem code client-side
-function generateRedeemCode(): string {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `#GE-${num}`;
-}
-
 export function useSubmitRedeemRequest() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -103,7 +97,7 @@ export function useSubmitRedeemRequest() {
               amount,
               rewardType,
               userName || "Demo User",
-              userEmail || "demo@gamerearn.com",
+              "demo@gamerearn.com", // Always use demo email for filtering consistency
             )
             .catch((e: unknown) =>
               console.warn("Backend log failed (demo):", e),
@@ -112,11 +106,9 @@ export function useSubmitRedeemRequest() {
         return code;
       }
 
-      // Non-demo users: use logRedeemRecord directly.
-      const code = generateRedeemCode();
+      // Non-demo users: use submitRedeemRequest which deducts coins properly.
       if (!actor) throw new Error("Not connected to backend");
-      await actor.logRedeemRecord(
-        code,
+      const code = await actor.submitRedeemRequest(
         amount,
         rewardType,
         userName || "User",
@@ -133,7 +125,7 @@ export function useSubmitRedeemRequest() {
 }
 
 export function useUserRedeemHistory() {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery<RedeemRequest[]>({
     queryKey: ["redeemHistory"],
     queryFn: async () => {
@@ -147,9 +139,10 @@ export function useUserRedeemHistory() {
         (r) => r.userEmail.toLowerCase() === email.toLowerCase(),
       );
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor,
+    staleTime: 0,
     refetchOnMount: true,
-    refetchInterval: 15_000, // auto-refresh every 15s so status updates appear
+    refetchInterval: 10_000, // auto-refresh every 10s so status updates appear
   });
 }
 

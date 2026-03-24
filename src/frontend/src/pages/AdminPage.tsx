@@ -35,6 +35,7 @@ import {
   useEditNotice,
   usePostNotice,
   useRejectRedeemRequest,
+  useTotalUserCount,
 } from "../hooks/useQueries";
 
 const ADMIN_EMAIL_HASH =
@@ -401,7 +402,9 @@ function NoticesSection() {
       return;
     }
     if (!actorReady) {
-      toast.error("Backend not connected. Please wait and try again.");
+      toast.error(
+        "Backend is connecting... Please wait a moment and try again.",
+      );
       return;
     }
     postMutation.mutate(
@@ -815,6 +818,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   } = useAllRedeemRequests();
   const approveMutation = useApproveRedeemRequest();
   const rejectMutation = useRejectRedeemRequest();
+  const { data: totalUserCount = BigInt(0) } = useTotalUserCount();
+  const [approvingId, setApprovingId] = useState<bigint | null>(null);
+  const [rejectingId, setRejectingId] = useState<bigint | null>(null);
 
   const filtered = (requests ?? []).filter((r) =>
     r.code.toLowerCase().includes(search.toLowerCase()),
@@ -1013,7 +1019,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               transition={{ duration: 0.2 }}
             >
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                 <StatCard
                   value={(requests ?? []).length}
                   label="Total Requests"
@@ -1045,6 +1051,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   iconColor="oklch(0.65 0.22 25)"
                   iconBg="oklch(0.65 0.22 25 / 12%)"
                   accentColor="oklch(0.50 0.22 25)"
+                />
+                <StatCard
+                  value={Number(totalUserCount)}
+                  label="Total Users"
+                  icon={<Users className="w-5 h-5" />}
+                  iconColor="oklch(0.72 0.18 260)"
+                  iconBg="oklch(0.72 0.18 260 / 12%)"
+                  accentColor="oklch(0.60 0.18 260)"
                 />
               </div>
 
@@ -1195,12 +1209,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <p className="text-5xl mb-4">🔍</p>
                   <p className="text-foreground font-bold text-base">
-                    {search ? "No results found" : "No redeem requests yet"}
+                    {search ? "No results found" : "No pending requests"}
                   </p>
                   <p className="text-muted-foreground text-sm mt-1.5">
                     {search
                       ? `No code matching "${search}"`
-                      : "Requests will appear here when users redeem."}
+                      : "Approved/rejected requests are automatically removed after 24 hours."}
                   </p>
                 </div>
               )}
@@ -1213,10 +1227,20 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       key={String(req.id)}
                       req={req}
                       index={i}
-                      onApprove={(id) => approveMutation.mutate(id)}
-                      onReject={(id) => rejectMutation.mutate(id)}
-                      isApproving={approveMutation.isPending}
-                      isRejecting={rejectMutation.isPending}
+                      onApprove={(id) => {
+                        setApprovingId(id);
+                        approveMutation.mutate(id, {
+                          onSettled: () => setApprovingId(null),
+                        });
+                      }}
+                      onReject={(id) => {
+                        setRejectingId(id);
+                        rejectMutation.mutate(id, {
+                          onSettled: () => setRejectingId(null),
+                        });
+                      }}
+                      isApproving={approvingId === req.id}
+                      isRejecting={rejectingId === req.id}
                     />
                   ))}
                 </div>
