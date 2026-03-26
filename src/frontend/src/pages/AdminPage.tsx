@@ -35,7 +35,6 @@ import {
   useEditNotice,
   usePostNotice,
   useRejectRedeemRequest,
-  useTotalUserCount,
 } from "../hooks/useQueries";
 
 const ADMIN_EMAIL_HASH =
@@ -803,7 +802,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   } = useAllRedeemRequests();
   const approveMutation = useApproveRedeemRequest();
   const rejectMutation = useRejectRedeemRequest();
-  const { data: totalUserCount = BigInt(0) } = useTotalUserCount();
   const [approvingId, setApprovingId] = useState<bigint | null>(null);
   const [rejectingId, setRejectingId] = useState<bigint | null>(null);
 
@@ -1036,14 +1034,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   iconColor="oklch(0.65 0.22 25)"
                   iconBg="oklch(0.65 0.22 25 / 12%)"
                   accentColor="oklch(0.50 0.22 25)"
-                />
-                <StatCard
-                  value={Number(totalUserCount)}
-                  label="Total Users"
-                  icon={<Users className="w-5 h-5" />}
-                  iconColor="oklch(0.72 0.18 260)"
-                  iconBg="oklch(0.72 0.18 260 / 12%)"
-                  accentColor="oklch(0.60 0.18 260)"
                 />
               </div>
 
