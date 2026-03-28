@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { backendInterface } from "../backend";
 import { createActorWithConfig } from "../config";
-import { setSharedActor } from "../utils/backendService";
 import { getSecretParameter } from "../utils/urlParams";
 import { useInternetIdentity } from "./useInternetIdentity";
 
@@ -15,32 +14,31 @@ export function useActor() {
     queryFn: async () => {
       const isAuthenticated = !!identity;
 
-      let actor: backendInterface;
       if (!isAuthenticated) {
-        actor = await createActorWithConfig();
-      } else {
-        const actorOptions = {
-          agentOptions: {
-            identity,
-          },
-        };
-        actor = await createActorWithConfig(actorOptions);
-        const adminToken = getSecretParameter("caffeineAdminToken") || "";
-        await actor._initializeAccessControlWithSecret(adminToken);
+        // Return anonymous actor if not authenticated
+        return await createActorWithConfig();
       }
 
-      // Share this actor with backendService so all backend calls use the same instance
-      setSharedActor(actor);
+      const actorOptions = {
+        agentOptions: {
+          identity,
+        },
+      };
+
+      const actor = await createActorWithConfig(actorOptions);
+      const adminToken = getSecretParameter("caffeineAdminToken") || "";
+      await actor._initializeAccessControlWithSecret(adminToken);
       return actor;
     },
+    // Only refetch when identity changes
     staleTime: Number.POSITIVE_INFINITY,
+    // This will cause the actor to be recreated when the identity changes
     enabled: true,
   });
 
   // When the actor changes, invalidate dependent queries
   useEffect(() => {
     if (actorQuery.data) {
-      setSharedActor(actorQuery.data);
       queryClient.invalidateQueries({
         predicate: (query) => {
           return !query.queryKey.includes(ACTOR_QUERY_KEY);
